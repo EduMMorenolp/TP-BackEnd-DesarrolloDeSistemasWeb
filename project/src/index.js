@@ -8,19 +8,19 @@ const express = require('express');
 // // Importar middleware global de errores
 // const errorHandler = require('./shared/errorHandler');
 
-// const app = express();
-// const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
-// // Middleware para parsear JSON
-// app.use(express.json());
+// Middleware para parsear JSON
+app.use(express.json());
 
-// // Endpoint de health check
-// app.get('/api/health', (req, res) => {
-//   res.status(200).json({
-//     status: 'ok',
-//     timestamp: new Date().toISOString()
-//   });
-// });
+// Endpoint de health check
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // // Registrar los 3 routers bajo /api
 // app.use('/api/sucursales', sucursalRoutes);
