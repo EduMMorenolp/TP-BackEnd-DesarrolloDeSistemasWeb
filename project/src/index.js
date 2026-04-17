@@ -11,8 +11,16 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
+// Configurar el motor de plantillas (Pug)
+app.set('view engine', 'pug');
+app.set('views', './src/view');
+
 // Middleware para parsear JSON
 app.use(express.json());
+
+app.get('/index', function (req, res) {
+    res.render('index');
+});
 
 // Endpoint de health check
 app.get('/api/health', (req, res) => {
