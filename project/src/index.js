@@ -10,6 +10,8 @@ const express = require('express');
 
 const app = express();
 const PORT = 3000;
+const pedidoRoutes = require('./pedidos/pedido.routes');
+
 
 // Configurar el motor de plantillas (Pug)
 app.set('view engine', 'pug');
@@ -17,6 +19,9 @@ app.set('views', './src/view');
 
 // Middleware para parsear JSON
 app.use(express.json());
+
+// Rutas
+app.use('/api/pedidos', pedidoRoutes);
 
 app.get('/index', function (req, res) {
     res.render('index');
