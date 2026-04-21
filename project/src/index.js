@@ -2,11 +2,11 @@ const express = require('express');
 
 // // Importar routers de cada módulo
 // const sucursalRoutes = require('./sucursales/sucursal.routes');
-// const productoRoutes = require('./productos/producto.routes');
+ const productoRoutes = require('./productos/producto.routes');
 // const pedidoRoutes = require('./pedidos/pedido.routes');
 
 // // Importar middleware global de errores
-// const errorHandler = require('./shared/errorHandler');
+ const errorHandler = require('./shared/errorHandler');
 
 const app = express();
 const PORT = 3000;
@@ -32,11 +32,11 @@ app.get('/api/health', (req, res) => {
 
 // // Registrar los 3 routers bajo /api
 // app.use('/api/sucursales', sucursalRoutes);
-// app.use('/api/productos', productoRoutes);
+ app.use('/api/productos', productoRoutes);
 // app.use('/api/pedidos', pedidoRoutes);
 
 // // Middleware global de manejo de errores (siempre al final)
-// app.use(errorHandler);
+ app.use(errorHandler);
 
 // Iniciar el servidor
 app.listen(PORT, () => {
