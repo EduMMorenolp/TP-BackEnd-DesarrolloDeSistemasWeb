@@ -1,0 +1,335 @@
+doctype html
+html(lang="es")
+	head
+		meta(charset="UTF-8")
+		meta(name="viewport", content="width=device-width, initial-scale=1.0")
+		title Pedidos - La Espiga de Oro
+		style.
+			:root {
+				--bg: #f6f4ee;
+				--ink: #1e1a14;
+				--card: #fff;
+				--line: #ddd2c3;
+				--brand: #7b3f00;
+				--ok: #0f766e;
+				--bad: #b91c1c;
+			}
+
+			* { box-sizing: border-box; }
+
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--ink);
+				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+			}
+
+			main {
+				max-width: 1100px;
+				margin: 0 auto;
+				padding: 1rem;
+			}
+
+			.card {
+				background: var(--card);
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				padding: 1rem;
+				margin-bottom: 1rem;
+			}
+
+			.head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: .6rem;
+				flex-wrap: wrap;
+			}
+
+			button, .btn {
+				border: 0;
+				border-radius: 8px;
+				padding: .55rem .85rem;
+				font-weight: 700;
+				background: var(--brand);
+				color: #fff;
+				cursor: pointer;
+				text-decoration: none;
+			}
+
+			select, input {
+				width: 100%;
+				padding: .6rem;
+				border: 1px solid #cabfac;
+				border-radius: 8px;
+			}
+
+			.grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: .7rem;
+			}
+
+			.linea {
+				display: grid;
+				grid-template-columns: 2fr 1fr auto;
+				gap: .5rem;
+				margin-bottom: .5rem;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			th, td {
+				border-bottom: 1px solid #eee5d8;
+				text-align: left;
+				vertical-align: top;
+				padding: .55rem;
+			}
+
+			.estado-ok { color: var(--ok); }
+			.estado-bad { color: var(--bad); }
+			.mini-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+			.mini-actions button:nth-child(2) { background: #9a3412; }
+			.mini-actions button:nth-child(3) { background: #b91c1c; }
+	body
+		main
+			section.card
+				.head
+					h1 Pedidos
+					div
+						a.btn(href="/index") Inicio
+			section.card
+				h2 Crear pedido
+				.grid
+					div
+						label(for="selSucursal") Sucursal
+						select#selSucursal
+					div
+						label(for="obs") Observaciones
+						input#obs(type="text", placeholder="Ej: entregar antes de las 8am")
+				h3 Productos
+				#lineas
+				button(type="button", onclick="agregarLinea()") Agregar producto
+				button(type="button", onclick="crearPedido()") Guardar pedido
+				p#msg
+
+			section.card
+				.head
+					h2 Lista de pedidos
+					button(type="button", onclick="cargarPedidos()") Recargar
+				table
+					thead
+						tr
+							th ID
+							th Sucursal
+							th Productos
+							th Estado
+							th Fecha
+							th Acciones
+					tbody#tablaPedidos
+
+		script.
+			let cacheProductos = [];
+
+			const selSucursal = document.getElementById('selSucursal');
+			const lineas = document.getElementById('lineas');
+			const tabla = document.getElementById('tablaPedidos');
+			const msg = document.getElementById('msg');
+
+			function setMsg(texto, ok = true) {
+				msg.textContent = texto;
+				msg.className = ok ? 'estado-ok' : 'estado-bad';
+			}
+
+			function normalizarProductosPedido(pedido) {
+				if (!Array.isArray(pedido.productos)) return [];
+				return pedido.productos.map((item) => {
+					if (item && item.productoId && typeof item.productoId === 'object') {
+						return {
+							id: item.productoId.id,
+							nombre: item.productoId.nombre,
+							cantidad: item.cantidad,
+							precio: item.productoId.precio
+						};
+					}
+					return {
+						id: item.productoId || item.id,
+						nombre: item.nombre,
+						cantidad: item.cantidad,
+						precio: item.precio
+					};
+				});
+			}
+
+			function plantillaLinea() {
+				const wrapper = document.createElement('div');
+				wrapper.className = 'linea';
+				const options = cacheProductos.map((p) => `<option value="${p.id}">${p.nombre}</option>`).join('');
+				wrapper.innerHTML = `
+					<select class="prod-id">${options}</select>
+					<input class="prod-cant" type="number" min="1" value="1" />
+					<button type="button" class="rm">Quitar</button>
+				`;
+				wrapper.querySelector('.rm').addEventListener('click', () => wrapper.remove());
+				return wrapper;
+			}
+
+			function agregarLinea() {
+				lineas.appendChild(plantillaLinea());
+			}
+
+			async function cargarBase() {
+				const [resSuc, resProd] = await Promise.all([
+					fetch('/api/sucursales'),
+					fetch('/api/productos')
+				]);
+
+				const suc = await resSuc.json();
+				const prod = await resProd.json();
+
+				const sucursales = Array.isArray(suc) ? suc : [];
+				cacheProductos = Array.isArray(prod) ? prod : [];
+
+				selSucursal.innerHTML = sucursales
+					.filter((s) => s.activa !== false)
+					.map((s) => `<option value="${s.id}">${s.nombre} (${s.tipo})</option>`)
+					.join('');
+
+				lineas.innerHTML = '';
+				agregarLinea();
+			}
+
+			async function crearPedido() {
+				try {
+					const sucursalId = selSucursal.value;
+					const observaciones = document.getElementById('obs').value.trim();
+					const productos = Array.from(lineas.querySelectorAll('.linea')).map((el) => ({
+						productoId: el.querySelector('.prod-id').value,
+						cantidad: Number(el.querySelector('.prod-cant').value)
+					})).filter((p) => p.productoId && p.cantidad > 0);
+
+					const res = await fetch('/api/pedidos', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ sucursalId, productos, observaciones })
+					});
+					const data = await res.json();
+					if (!res.ok) throw new Error(data.error || 'No se pudo crear pedido');
+
+					setMsg('Pedido creado correctamente');
+					document.getElementById('obs').value = '';
+					lineas.innerHTML = '';
+					agregarLinea();
+					cargarPedidos();
+				} catch (err) {
+					setMsg(err.message, false);
+				}
+			}
+
+			function htmlProductos(items) {
+				return items.map((p) => `${p.nombre || p.id} x${p.cantidad}`).join('<br/>');
+			}
+
+			function filaPedido(p) {
+				const tr = document.createElement('tr');
+				const suc = p.sucursal && typeof p.sucursal === 'object'
+					? p.sucursal.nombre
+					: p.sucursalId || '-';
+				const productos = normalizarProductosPedido(p);
+				tr.innerHTML = `
+					<td>${p.id || '-'}</td>
+					<td>${suc}</td>
+					<td>${htmlProductos(productos)}</td>
+					<td>${p.estado || '-'}</td>
+					<td>${p.fechaActualizacion || p.fechaPedido || '-'}</td>
+					<td>
+						<div class="mini-actions">
+							<button type="button" data-next="${p.id}">Avanzar estado</button>
+							<button type="button" data-cancel="${p.id}">Cancelar</button>
+						</div>
+					</td>
+				`;
+				return tr;
+			}
+
+			async function cargarPedidos() {
+				tabla.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
+				try {
+					const res = await fetch('/api/pedidos');
+					const data = await res.json();
+					const pedidos = Array.isArray(data) ? data : [];
+					if (pedidos.length === 0) {
+						tabla.innerHTML = '<tr><td colspan="6">Sin pedidos</td></tr>';
+						return;
+					}
+					tabla.innerHTML = '';
+					pedidos.forEach((p) => tabla.appendChild(filaPedido(p)));
+				} catch {
+					tabla.innerHTML = '<tr><td colspan="6">Error de carga</td></tr>';
+				}
+			}
+
+			function siguienteEstado(actual) {
+				if (actual === 'pendiente') return 'en_produccion';
+				if (actual === 'en_produccion') return 'despachado';
+				if (actual === 'despachado') return 'entregado';
+				return null;
+			}
+
+			async function avanzarEstado(id) {
+				const resPedido = await fetch(`/api/pedidos/${id}`);
+				const pedido = await resPedido.json();
+				if (!resPedido.ok) throw new Error(pedido.error || 'Pedido no encontrado');
+
+				const next = siguienteEstado(pedido.estado);
+				if (!next) throw new Error('El pedido no tiene siguiente estado');
+
+				const res = await fetch(`/api/pedidos/${id}/estado`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ estado: next })
+				});
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || 'No se pudo avanzar');
+			}
+
+			async function cancelarPedido(id) {
+				const ok = confirm('Cancelar pedido? Solo aplica a pendientes.');
+				if (!ok) return;
+				const res = await fetch(`/api/pedidos/${id}`, { method: 'DELETE' });
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+			}
+
+			tabla.addEventListener('click', async (e) => {
+				const btn = e.target.closest('button');
+				if (!btn) return;
+				const idNext = btn.getAttribute('data-next');
+				const idCancel = btn.getAttribute('data-cancel');
+				try {
+					if (idNext) {
+						await avanzarEstado(idNext);
+						setMsg('Estado actualizado');
+						await cargarPedidos();
+					}
+					if (idCancel) {
+						await cancelarPedido(idCancel);
+						setMsg('Pedido cancelado');
+						await cargarPedidos();
+					}
+				} catch (err) {
+					setMsg(err.message, false);
+				}
+			});
+
+			(async function init() {
+				try {
+					await cargarBase();
+					await cargarPedidos();
+				} catch (err) {
+					setMsg('No se pudieron cargar datos base', false);
+				}
+			})();

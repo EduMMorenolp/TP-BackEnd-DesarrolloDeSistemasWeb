@@ -1,0 +1,277 @@
+doctype html
+html(lang="es")
+	head
+		meta(charset="UTF-8")
+		meta(name="viewport", content="width=device-width, initial-scale=1.0")
+		title Productos - La Espiga de Oro
+		style.
+			:root {
+				--bg: #fbf8f1;
+				--ink: #1f1a14;
+				--card: #fff;
+				--line: #dccfb9;
+				--brand: #7b3f00;
+				--ok: #0f766e;
+				--warn: #b45309;
+				--bad: #b91c1c;
+			}
+
+			* { box-sizing: border-box; }
+
+			body {
+				margin: 0;
+				background: linear-gradient(180deg, #fef8eb, var(--bg));
+				color: var(--ink);
+				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+			}
+
+			main {
+				max-width: 1050px;
+				margin: 0 auto;
+				padding: 1rem;
+			}
+
+			.top {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: .5rem;
+			}
+
+			.card {
+				background: var(--card);
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				padding: 1rem;
+				margin-top: 1rem;
+			}
+
+			form {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: .7rem;
+			}
+
+			input {
+				width: 100%;
+				padding: .6rem;
+				border: 1px solid #c9bfae;
+				border-radius: 8px;
+			}
+
+			button, .link-btn {
+				border: 0;
+				border-radius: 8px;
+				padding: .55rem .8rem;
+				background: var(--brand);
+				color: #fff;
+				font-weight: 700;
+				cursor: pointer;
+			}
+
+			.link-btn {
+				text-decoration: none;
+				display: inline-block;
+			}
+
+			.muted {
+				opacity: .85;
+				font-size: .95rem;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: .6rem;
+			}
+
+			th, td {
+				border-bottom: 1px solid #ece3d6;
+				text-align: left;
+				padding: .55rem;
+				vertical-align: top;
+			}
+
+			.actions {
+				display: flex;
+				gap: .3rem;
+				flex-wrap: wrap;
+			}
+
+			.actions button:nth-child(1) { background: var(--warn); }
+			.actions button:nth-child(2) { background: var(--bad); }
+
+			.ok { color: var(--ok); }
+			.bad { color: var(--bad); }
+
+			@media (max-width: 700px) {
+				th:nth-child(3), td:nth-child(3), th:nth-child(5), td:nth-child(5) { display: none; }
+			}
+	body
+		main
+			.top
+				h1 Productos
+				div
+					a.link-btn(href="/index") Inicio
+
+			section.card
+				h2 Alta rapida
+				p.muted Crea productos desde esta pantalla. Tambien puedes editar o eliminar filas existentes.
+				form#productoForm
+					input(type="text", name="nombre", placeholder="Nombre", required=true)
+					input(type="text", name="descripcion", placeholder="Descripcion")
+					input(type="number", name="precio", placeholder="Precio", step="0.01", min="0.01", required=true)
+					input(type="text", name="categoria", placeholder="Categoria", required=true)
+					button(type="submit") Crear producto
+				p#estadoMsg.muted
+
+			section.card
+				.top
+					h2 Catalogo
+					button(type="button", onclick="cargarProductos()") Recargar
+				table
+					thead
+						tr
+							th ID
+							th Nombre
+							th Descripcion
+							th Precio
+							th Categoria
+							th Disponible
+							th Acciones
+					tbody#tablaProductos
+
+		script.
+			const form = document.getElementById('productoForm');
+			const tabla = document.getElementById('tablaProductos');
+			const estadoMsg = document.getElementById('estadoMsg');
+
+			function setMsg(texto, esError = false) {
+				estadoMsg.textContent = texto;
+				estadoMsg.className = esError ? 'bad' : 'ok';
+			}
+
+			function fmtPrecio(value) {
+				const n = Number(value);
+				return Number.isFinite(n) ? n.toFixed(2) : '-';
+			}
+
+			function filaProducto(p) {
+				const tr = document.createElement('tr');
+				tr.innerHTML = `
+					<td>${p.id || '-'}</td>
+					<td>${p.nombre || '-'}</td>
+					<td>${p.descripcion || '-'}</td>
+					<td>${fmtPrecio(p.precio)}</td>
+					<td>${p.categoria || '-'}</td>
+					<td>${p.disponible === false ? 'No' : 'Si'}</td>
+					<td>
+						<div class="actions">
+							<button type="button" data-edit="${p.id}">Editar</button>
+							<button type="button" data-del="${p.id}">Eliminar</button>
+						</div>
+					</td>
+				`;
+				return tr;
+			}
+
+			async function cargarProductos() {
+				tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+				try {
+					const res = await fetch('/api/productos');
+					const data = await res.json();
+					const items = Array.isArray(data) ? data : [];
+					if (items.length === 0) {
+						tabla.innerHTML = '<tr><td colspan="7">No hay productos</td></tr>';
+						return;
+					}
+					tabla.innerHTML = '';
+					items.forEach((p) => tabla.appendChild(filaProducto(p)));
+				} catch (err) {
+					tabla.innerHTML = '<tr><td colspan="7">Error al cargar</td></tr>';
+				}
+			}
+
+			async function crearProducto(payload) {
+				const res = await fetch('/api/productos', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload)
+				});
+				const data = await res.json();
+				if (!res.ok) {
+					throw new Error(data.error || 'Error al crear producto');
+				}
+			}
+
+			async function editarProducto(id) {
+				const nombre = prompt('Nuevo nombre:');
+				if (!nombre) return;
+				const precioRaw = prompt('Nuevo precio (>0):');
+				const precio = Number(precioRaw);
+				if (!Number.isFinite(precio) || precio <= 0) {
+					setMsg('Precio invalido', true);
+					return;
+				}
+				const descripcion = prompt('Nueva descripcion:') || '';
+				const categoria = prompt('Nueva categoria:') || '';
+
+				const res = await fetch(`/api/productos/${id}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ nombre, precio, descripcion, categoria })
+				});
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || 'No se pudo actualizar');
+			}
+
+			async function eliminarProducto(id) {
+				const ok = confirm('Eliminar producto?');
+				if (!ok) return;
+				const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || 'No se pudo eliminar');
+			}
+
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const fd = new FormData(form);
+				const payload = {
+					nombre: String(fd.get('nombre') || '').trim(),
+					descripcion: String(fd.get('descripcion') || '').trim(),
+					precio: Number(fd.get('precio')),
+					categoria: String(fd.get('categoria') || '').trim()
+				};
+				try {
+					await crearProducto(payload);
+					setMsg('Producto creado correctamente');
+					form.reset();
+					cargarProductos();
+				} catch (err) {
+					setMsg(err.message, true);
+				}
+			});
+
+			tabla.addEventListener('click', async (e) => {
+				const boton = e.target.closest('button');
+				if (!boton) return;
+				const idEdit = boton.getAttribute('data-edit');
+				const idDel = boton.getAttribute('data-del');
+				try {
+					if (idEdit) {
+						await editarProducto(idEdit);
+						setMsg('Producto actualizado');
+						await cargarProductos();
+					}
+					if (idDel) {
+						await eliminarProducto(idDel);
+						setMsg('Producto eliminado');
+						await cargarProductos();
+					}
+				} catch (err) {
+					setMsg(err.message, true);
+				}
+			});
+
+			cargarProductos();
