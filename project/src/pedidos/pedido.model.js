@@ -1,39 +1,38 @@
-// Almacenamiento en memoria (Database temporal)
-const pedidos = [];
-let nextId = 1;
+const { v4: uuidv4 } = require('uuid');
+const store = require('../shared/store');
 
 /**
  * Función para crear un pedido con los campos base requeridos.
- * Según el brief: id, estado (pendiente), fechaPedido y fechaActualizacion.
+ * Según el brief: id, sucursalId, productos, observaciones, estado, fechaPedido y fechaActualizacion.
  */
 const createPedido = (data) => {
     const nuevoPedido = {
-        id: nextId++,
-        idSucursal: data.idSucursal,
-        productos: data.productos, // Array de { idProducto, cantidad }
-        estado: 'pendiente', // Estado inicial por defecto
+        id: uuidv4(),
+        sucursalId: data.sucursalId,
+        productos: data.productos,
+        observaciones: data.observaciones || '',
+        estado: 'pendiente',
         fechaPedido: new Date().toISOString(),
         fechaActualizacion: new Date().toISOString()
     };
-    
-    pedidos.push(nuevoPedido);
+
+    store.pedidos.push(nuevoPedido);
     return nuevoPedido;
 };
 
-// Funciones auxiliares para el CRUD
-const getAll = () => pedidos;
+const getAll = () => store.pedidos;
 
-const getById = (id) => pedidos.find(p => p.id === parseInt(id));
+const getById = (id) => store.pedidos.find(p => p.id === id);
 
 const updatePedidoInDb = (id, updatedData) => {
-    const index = pedidos.findIndex(p => p.id === parseInt(id));
+    const index = store.pedidos.findIndex(p => p.id === id);
     if (index !== -1) {
-        pedidos[index] = { 
-            ...pedidos[index], 
-            ...updatedData, 
-            fechaActualizacion: new Date().toISOString() 
+        store.pedidos[index] = {
+            ...store.pedidos[index],
+            ...updatedData,
+            fechaActualizacion: new Date().toISOString()
         };
-        return pedidos[index];
+        return store.pedidos[index];
     }
     return null;
 };

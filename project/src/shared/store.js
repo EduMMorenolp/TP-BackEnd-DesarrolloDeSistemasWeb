@@ -1,7 +1,7 @@
 const store = {
-  productos: [], 
-  //sucursales: [],
-  //pedidos: []
+  sucursales: [],
+  productos: [],
+  pedidos: []
 };
 
 module.exports = store;
