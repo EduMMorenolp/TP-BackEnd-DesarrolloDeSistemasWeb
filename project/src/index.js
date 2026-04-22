@@ -22,6 +22,26 @@ app.get('/index', function (req, res) {
     res.render('index');
 });
 
+app.get('/pedidos', function (req, res) {
+    res.render('pedidos');
+});
+
+app.get('/pedidos/nuevo', function (req, res) {
+    res.render('nuevoPedido');
+});
+
+app.get('/sucursales', function (req, res) {
+    res.render('sucursales');
+});
+
+app.get('/productos', function (req, res) {
+    res.render('productos');
+});
+
+app.get('/productos/nuevo', function (req, res) {
+    res.render('nuevoProducto');
+});
+
 // Endpoint de health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({

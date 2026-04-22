@@ -1,0 +1,159 @@
+doctype html
+html(lang="es")
+	head
+		meta(charset="UTF-8")
+		meta(name="viewport", content="width=device-width, initial-scale=1.0")
+		title Nuevo Pedido
+		style.
+			body {
+				margin: 0;
+				background: #f8f4ea;
+				color: #251f19;
+				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+			}
+			main {
+				max-width: 760px;
+				margin: 1rem auto;
+				padding: 1rem;
+			}
+			.card {
+				background: #fff;
+				border: 1px solid #d9ccb4;
+				border-radius: 12px;
+				padding: 1rem;
+			}
+			.row {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: .7rem;
+			}
+			input, select {
+				width: 100%;
+				border: 1px solid #cbbca1;
+				border-radius: 8px;
+				padding: .62rem;
+			}
+			button, a {
+				border: 0;
+				border-radius: 8px;
+				padding: .6rem .9rem;
+				font-weight: 700;
+				cursor: pointer;
+				text-decoration: none;
+			}
+			button { background: #8d4f16; color: #fff; }
+			a { background: #d7aa67; color: #342008; display: inline-block; }
+			#items {
+				margin-top: .8rem;
+			}
+			.it {
+				display: grid;
+				grid-template-columns: 2fr 1fr auto;
+				gap: .4rem;
+				margin-bottom: .4rem;
+			}
+			pre {
+				background: #1d1a17;
+				color: #ecdfcb;
+				border-radius: 8px;
+				padding: .8rem;
+				overflow-x: auto;
+			}
+	body
+		main
+			.card
+				h1 Nuevo Pedido
+				p Carga rapida de pedidos a la API.
+				.row
+					div
+						label(for="sucursal") Sucursal activa
+						select#sucursal
+					div
+						label(for="obs") Observaciones
+						input#obs(type="text", placeholder="Ej: dejar en recepcion")
+
+				h3 Productos
+				#items
+				.row
+					button(type="button", onclick="addItem()") Agregar linea
+					button(type="button", onclick="submitPedido()") Enviar pedido
+
+				.row(style="margin-top:.8rem;")
+					a(href="/pedidos") Ir a pedidos
+					a(href="/index") Inicio
+
+				h3(style="margin-top:1rem;") Respuesta
+				pre#out Esperando envio...
+
+		script.
+			let productos = [];
+			const sucursalSel = document.getElementById('sucursal');
+			const items = document.getElementById('items');
+			const out = document.getElementById('out');
+
+			function rowTemplate() {
+				const d = document.createElement('div');
+				d.className = 'it';
+				d.innerHTML = `
+					<select class="pid">
+						${productos.map((p) => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+					</select>
+					<input class="cant" type="number" min="1" value="1" />
+					<button type="button" class="rm">X</button>
+				`;
+				d.querySelector('.rm').addEventListener('click', () => d.remove());
+				return d;
+			}
+
+			function addItem() {
+				items.appendChild(rowTemplate());
+			}
+
+			function printResult(data) {
+				out.textContent = JSON.stringify(data, null, 2);
+			}
+
+			async function bootstrap() {
+				const [a, b] = await Promise.all([
+					fetch('/api/sucursales'),
+					fetch('/api/productos')
+				]);
+				const suc = await a.json();
+				const prods = await b.json();
+
+				const sucursales = Array.isArray(suc) ? suc : [];
+				productos = Array.isArray(prods) ? prods : [];
+
+				sucursalSel.innerHTML = sucursales
+					.filter((s) => s.activa !== false)
+					.map((s) => `<option value="${s.id}">${s.nombre}</option>`)
+					.join('');
+
+				items.innerHTML = '';
+				addItem();
+			}
+
+			async function submitPedido() {
+				try {
+					const payload = {
+						sucursalId: sucursalSel.value,
+						observaciones: document.getElementById('obs').value.trim(),
+						productos: Array.from(items.querySelectorAll('.it')).map((el) => ({
+							productoId: el.querySelector('.pid').value,
+							cantidad: Number(el.querySelector('.cant').value)
+						}))
+					};
+
+					const res = await fetch('/api/pedidos', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload)
+					});
+					const data = await res.json();
+					printResult(data);
+				} catch (err) {
+					printResult({ error: err.message });
+				}
+			}
+
+			bootstrap().catch((err) => printResult({ error: err.message }));

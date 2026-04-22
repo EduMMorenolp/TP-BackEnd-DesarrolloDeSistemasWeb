@@ -1,0 +1,223 @@
+doctype html
+html(lang="es")
+	head
+		meta(charset="UTF-8")
+		meta(name="viewport", content="width=device-width, initial-scale=1.0")
+		title Sucursales - La Espiga de Oro
+		style.
+			:root {
+				--bg: #f8f5ee;
+				--ink: #1d1914;
+				--line: #d8ccb9;
+				--card: #fff;
+				--brand: #7b3f00;
+				--ok: #0f766e;
+				--bad: #b91c1c;
+			}
+
+			* { box-sizing: border-box; }
+
+			body {
+				margin: 0;
+				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+				color: var(--ink);
+				background: var(--bg);
+			}
+
+			main {
+				max-width: 1050px;
+				margin: 0 auto;
+				padding: 1rem;
+			}
+
+			.card {
+				background: var(--card);
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				padding: 1rem;
+				margin-bottom: 1rem;
+			}
+
+			.head {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: .5rem;
+			}
+
+			.grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: .7rem;
+			}
+
+			input, select {
+				width: 100%;
+				border: 1px solid #cabca7;
+				border-radius: 8px;
+				padding: .62rem;
+			}
+
+			button, .btn {
+				border: 0;
+				border-radius: 8px;
+				padding: .55rem .85rem;
+				background: var(--brand);
+				color: #fff;
+				font-weight: 700;
+				cursor: pointer;
+				text-decoration: none;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			th, td {
+				border-bottom: 1px solid #ece4d6;
+				text-align: left;
+				padding: .55rem;
+				vertical-align: top;
+			}
+
+			.ok { color: var(--ok); }
+			.bad { color: var(--bad); }
+	body
+		main
+			section.card
+				.head
+					h1 Sucursales y Franquicias
+					a.btn(href="/index") Inicio
+			section.card
+				h2 Alta de sucursal
+				form#formSucursal.grid
+					input(type="text", name="nombre", placeholder="Nombre", required=true)
+					select(name="tipo", required=true)
+						option(value="sucursal") sucursal
+						option(value="franquicia") franquicia
+					input(type="text", name="direccion", placeholder="Direccion", required=true)
+					button(type="submit") Crear
+				p#msg
+
+			section.card
+				.head
+					h2 Listado
+					button(type="button", onclick="cargarSucursales()") Recargar
+				table
+					thead
+						tr
+							th ID
+							th Nombre
+							th Tipo
+							th Direccion
+							th Activa
+							th Fecha
+							th Acciones
+					tbody#tabla
+
+		script.
+			const form = document.getElementById('formSucursal');
+			const tabla = document.getElementById('tabla');
+			const msg = document.getElementById('msg');
+
+			function setMsg(texto, ok = true) {
+				msg.textContent = texto;
+				msg.className = ok ? 'ok' : 'bad';
+			}
+
+			function fila(s) {
+				const tr = document.createElement('tr');
+				tr.innerHTML = `
+					<td>${s.id || '-'}</td>
+					<td>${s.nombre || '-'}</td>
+					<td>${s.tipo || '-'}</td>
+					<td>${s.direccion || '-'}</td>
+					<td>${s.activa === false ? 'No' : 'Si'}</td>
+					<td>${s.fechaCreacion || '-'}</td>
+					<td>
+						<button type="button" data-edit="${s.id}">Editar</button>
+						<button type="button" data-off="${s.id}">Desactivar</button>
+					</td>
+				`;
+				return tr;
+			}
+
+			async function cargarSucursales() {
+				tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+				try {
+					const res = await fetch('/api/sucursales');
+					const data = await res.json();
+					const list = Array.isArray(data) ? data : [];
+					if (list.length === 0) {
+						tabla.innerHTML = '<tr><td colspan="7">Sin sucursales</td></tr>';
+						return;
+					}
+					tabla.innerHTML = '';
+					list.forEach((s) => tabla.appendChild(fila(s)));
+				} catch {
+					tabla.innerHTML = '<tr><td colspan="7">Error al cargar</td></tr>';
+				}
+			}
+
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const fd = new FormData(form);
+				const payload = {
+					nombre: String(fd.get('nombre') || '').trim(),
+					tipo: String(fd.get('tipo') || ''),
+					direccion: String(fd.get('direccion') || '').trim()
+				};
+				try {
+					const res = await fetch('/api/sucursales', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload)
+					});
+					const data = await res.json();
+					if (!res.ok) throw new Error(data.error || 'No se pudo crear');
+					form.reset();
+					setMsg('Sucursal creada');
+					cargarSucursales();
+				} catch (err) {
+					setMsg(err.message, false);
+				}
+			});
+
+			tabla.addEventListener('click', async (e) => {
+				const btn = e.target.closest('button');
+				if (!btn) return;
+				const idEdit = btn.getAttribute('data-edit');
+				const idOff = btn.getAttribute('data-off');
+				try {
+					if (idEdit) {
+						const nombre = prompt('Nuevo nombre:');
+						const tipo = prompt('Nuevo tipo (sucursal|franquicia):');
+						const direccion = prompt('Nueva direccion:');
+						if (!nombre || !tipo || !direccion) return;
+						const res = await fetch(`/api/sucursales/${idEdit}`, {
+							method: 'PUT',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ nombre, tipo, direccion })
+						});
+						const data = await res.json();
+						if (!res.ok) throw new Error(data.error || 'No se pudo actualizar');
+						setMsg('Sucursal actualizada');
+						await cargarSucursales();
+					}
+					if (idOff) {
+						const ok = confirm('Desactivar sucursal?');
+						if (!ok) return;
+						const res = await fetch(`/api/sucursales/${idOff}`, { method: 'DELETE' });
+						const data = await res.json();
+						if (!res.ok) throw new Error(data.error || 'No se pudo desactivar');
+						setMsg('Sucursal desactivada');
+						await cargarSucursales();
+					}
+				} catch (err) {
+					setMsg(err.message, false);
+				}
+			});
+
+			cargarSucursales();
