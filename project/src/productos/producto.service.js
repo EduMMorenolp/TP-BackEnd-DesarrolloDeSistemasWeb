@@ -21,14 +21,24 @@ const listar = () => store.productos;
 
 const obtenerPorId = (id) => {
   const producto = store.productos.find(p => p.id === id);
-  
+
   if (!producto) {
     const error = new Error("Producto no encontrado");
-    error.status = 404; // Código estándar para cuando algo no existe
+    error.status = 404;
     throw error;
   }
-  
+
   return producto;
+};
+
+const obtenerProductosPorIds = (ids) => {
+  if (!Array.isArray(ids)) {
+    const error = new Error('El parámetro debe ser un arreglo de ids');
+    error.status = 400;
+    throw error;
+  }
+
+  return ids.map(id => obtenerPorId(id));
 };
 
 const actualizar = (id, datosNuevos) => {
@@ -82,4 +92,4 @@ const eliminar = (id) => {
 };
 
 
-module.exports = { crear, listar, obtenerPorId, actualizar, eliminar };
+module.exports = { crear, listar, obtenerPorId, obtenerProductosPorIds, actualizar, eliminar };

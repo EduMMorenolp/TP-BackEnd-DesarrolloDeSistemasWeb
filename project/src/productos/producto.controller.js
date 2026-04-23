@@ -18,13 +18,13 @@ const obtenerCatalogo = (req, res, next) => {
   }
 };
 
-const obtenerProducto = (req, res, next) => {
+const obtenerProductoPorId = (req, res, next) => {
   try {
-    const { id } = req.params; // Extrae el id de /api/productos/:id
+    const { id } = req.params;
     const producto = productoService.obtenerPorId(id);
     res.status(200).json(producto);
   } catch (err) {
-    next(err); // Si es 404, el errorHandler lo manejará
+    next(err);
   }
 };
 
@@ -48,4 +48,4 @@ const eliminarProducto = (req, res, next) => {
   }
 };
 
-module.exports = { crearProducto, obtenerCatalogo, obtenerProducto, actualizarProducto, eliminarProducto };
+module.exports = { crearProducto, obtenerCatalogo, obtenerProductoPorId, actualizarProducto, eliminarProducto };

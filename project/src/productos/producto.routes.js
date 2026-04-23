@@ -13,10 +13,10 @@ router.get('/', productoController.obtenerCatalogo);
 router.post('/', productoController.crearProducto);
 
 // GET /api/productos/:id -> Obtener un producto por ID
- router.get('/:id', productoController.obtenerProducto);
+router.get('/:id', productoController.obtenerProductoPorId);
 
 // PUT /api/productos/:id -> Actualizar un producto
- router.put('/:id', productoController.actualizarProducto);
+router.put('/:id', productoController.actualizarProducto);
 
 // DELETE /api/productos/:id -> Eliminar un producto
  router.delete('/:id', productoController.eliminarProducto);
