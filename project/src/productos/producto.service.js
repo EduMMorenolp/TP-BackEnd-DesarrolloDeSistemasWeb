@@ -77,8 +77,8 @@ const eliminar = (id) => {
 
   // 2. Regla de negocio: Verificar pedidos activos
   // Buscamos en el array de pedidos (Dev 4)
-  const productoEnUso = store.pedidos.some(pedido => 
-    pedido.productos.includes(id) && pedido.estado !== "entregado"
+  const productoEnUso = store.pedidos.some(pedido =>
+    pedido.productos.some(item => item.productoId === id) && pedido.estado !== "entregado"
   );
 
   if (productoEnUso) {

@@ -1,0 +1,336 @@
+{
+  "info": {
+    "name": "La Espiga de Oro - API Collection",
+    "description": "Colección completa de endpoints para el sistema de gestión de pedidos de La Espiga de Oro",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "sucursalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pedidoId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sucursales",
+      "item": [
+        {
+          "name": "GET /api/sucursales - Listar todas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sucursales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sucursales"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/sucursales/:id - Obtener por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sucursales/{{sucursalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sucursales", "{{sucursalId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/sucursales - Crear sucursal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sucursal La Plata Centro\",\n  \"tipo\": \"sucursal\",\n  \"direccion\": \"Calle 7 Nro 850\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sucursales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sucursales"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('sucursalId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /api/sucursales/:id - Actualizar sucursal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sucursal La Plata Centro Actualizada\",\n  \"direccion\": \"Calle 8 Nro 900\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sucursales/{{sucursalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sucursales", "{{sucursalId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/sucursales/:id - Desactivar sucursal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sucursales/{{sucursalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sucursales", "{{sucursalId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "item": [
+        {
+          "name": "GET /api/productos - Listar todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/productos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "productos"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/productos/:id - Obtener por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/productos/{{productoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "productos", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/productos - Crear producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Medialunas de manteca x12\",\n  \"descripcion\": \"Caja de 12 medialunas de manteca artesanales\",\n  \"precio\": 2400,\n  \"categoria\": \"facturas\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/productos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "productos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('productoId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /api/productos/:id - Actualizar producto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 2500,\n  \"descripcion\": \"Caja de 12 medialunas premium\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/productos/{{productoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "productos", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/productos/:id - Eliminar producto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/productos/{{productoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "productos", "{{productoId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedidos",
+      "item": [
+        {
+          "name": "GET /api/pedidos - Listar todos (con populate)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pedidos"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/pedidos/:id - Obtener por ID (con populate)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos/{{pedidoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/pedidos - Crear pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sucursalId\": \"{{sucursalId}}\",\n  \"productos\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"cantidad\": 3\n    }\n  ],\n  \"observaciones\": \"Entregar antes de las 8am\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pedidos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('pedidoId', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/pedidos/:id/estado - Cambiar estado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"en_produccion\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos/{{pedidoId}}/estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "estado"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/pedidos/:id - Cancelar pedido",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos/{{pedidoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
