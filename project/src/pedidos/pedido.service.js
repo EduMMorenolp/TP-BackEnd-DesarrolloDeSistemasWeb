@@ -1,46 +1,4 @@
-/* const pedidoModel = require('./pedido.model');
-// Aquí importarás las funciones de tus compañeros cuando las tengan:
-// const { esSucursalActiva } = require('../sucursales/sucursal.service');
-// const { obtenerProductosPorIds } = require('../productos/producto.service');
 
-const crearNuevoPedido = (datos) => {
-    const { idSucursal, productos } = datos;
-
-    // 1. Validar datos obligatorios
-    if (!idSucursal || !productos || productos.length === 0) {
-        throw new Error("Datos incompletos: idSucursal y productos son requeridos.");
-    }
-
-    // 2. Simulación de validación entre módulos (lo que pide el TP)
-    // if (!esSucursalActiva(idSucursal)) {
-    //     throw new Error("La sucursal no está activa o no existe.");
-    // }
-
-    // 3. Crear el pedido usando el modelo
-    return pedidoModel.createPedido({ idSucursal, productos });
-};
-
-const actualizarEstadoPedido = (id, nuevoEstado) => {
-    const estadosPermitidos = ['pendiente', 'en_produccion', 'despachado', 'entregado'];
-    
-    if (!estadosPermitidos.includes(nuevoEstado)) {
-        throw new Error("Estado no válido.");
-    }
-
-    const pedidoActualizado = pedidoModel.updatePedidoInDb(id, { estado: nuevoEstado });
-    if (!pedidoActualizado) {
-        throw new Error("Pedido no encontrado.");
-    }
-
-    return pedidoActualizado;
-};
-
-module.exports = {
-    crearNuevoPedido,
-    actualizarEstadoPedido,
-    obtenerTodos: pedidoModel.getAll,
-    obtenerPorId: pedidoModel.getById
-}; */
 
 const pedidoModel = require('./pedido.model');
 const store = require('../shared/store');
