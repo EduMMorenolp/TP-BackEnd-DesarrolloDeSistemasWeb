@@ -1,4 +1,4 @@
-const store = require('../shared/store'); //Importa la "base de datos"
+const { store, saveStore } = require('../shared/store');
 
 const { createProducto } = require('./producto.model');
 
@@ -14,6 +14,7 @@ const crear = (datos) => {
 
   const nuevoProducto = createProducto(datos);
   store.productos.push(nuevoProducto);
+  saveStore();
   return nuevoProducto;
 };
 
@@ -60,8 +61,10 @@ const actualizar = (id, datosNuevos) => {
 
   // Actualizamos solo los campos que vienen en el body
   if (nombre) producto.nombre = nombre;
-  if (precio) producto.precio = precio;
+  if (precio !== undefined) producto.precio = precio;
   if (descripcion) producto.descripcion = descripcion;
+
+  saveStore();
 
   return producto;
 };
@@ -88,7 +91,9 @@ const eliminar = (id) => {
   }
 
   // 3. Si todo está bien, lo borramos
-  return store.productos.splice(index, 1);
+  const eliminado = store.productos.splice(index, 1);
+  saveStore();
+  return eliminado;
 };
 
 

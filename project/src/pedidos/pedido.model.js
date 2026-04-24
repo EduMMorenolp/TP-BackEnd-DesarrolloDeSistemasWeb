@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const store = require('../shared/store');
+const { store, saveStore } = require('../shared/store');
 
 /**
  * Función para crear un pedido con los campos base requeridos.
@@ -17,6 +17,7 @@ const createPedido = (data) => {
     };
 
     store.pedidos.push(nuevoPedido);
+    saveStore();
     return nuevoPedido;
 };
 
@@ -32,6 +33,7 @@ const updatePedidoInDb = (id, updatedData) => {
             ...updatedData,
             fechaActualizacion: new Date().toISOString()
         };
+        saveStore();
         return store.pedidos[index];
     }
     return null;

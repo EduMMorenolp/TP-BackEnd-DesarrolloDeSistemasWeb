@@ -1,5 +1,5 @@
 const { createSucursal } = require('./sucursal.model');
-const store = require('../shared/store');
+const { store, saveStore } = require('../shared/store');
 
 //Validar campos obligatorios
 function validar({ nombre, tipo, direccion }) {
@@ -22,6 +22,7 @@ function crear(data) {
 
   const nueva = createSucursal(data);
   store.sucursales.push(nueva);
+  saveStore();
 
   return nueva;
 }
@@ -51,6 +52,8 @@ function actualizar(id, data) {
   if (data.tipo) sucursal.tipo = data.tipo;
   if (data.direccion) sucursal.direccion = data.direccion;
 
+  saveStore();
+
   return sucursal;
 }
 
@@ -70,6 +73,7 @@ function desactivar(id) {
   }
 
   sucursal.activa = false;
+  saveStore();
 
   return sucursal;
 }

@@ -1,7 +1,7 @@
 
 
 const pedidoModel = require('./pedido.model');
-const store = require('../shared/store');
+const { store, saveStore } = require('../shared/store');
 const { esSucursalActiva } = require('../sucursales/sucursal.service');
 const { obtenerProductosPorIds } = require('../productos/producto.service');
 
@@ -84,6 +84,7 @@ const cancelar = (id) => {
 
     const index = store.pedidos.indexOf(pedido);
     store.pedidos.splice(index, 1);
+    saveStore();
     return { message: 'Pedido cancelado exitosamente' };
 };
 
