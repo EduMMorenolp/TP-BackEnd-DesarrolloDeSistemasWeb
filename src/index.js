@@ -33,6 +33,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rutas de vistas (opcional, para el frontend)
+app.get('/', function (req, res) {
+    res.render('index');
+});
+
 app.get('/index', function (req, res) {
     res.render('index');
 });
