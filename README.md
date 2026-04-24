@@ -110,7 +110,7 @@ Para importar la colección de Postman, utiliza el archivo `postman_collection.j
 ## Equipo de Desarrollo
 
 - Eduardo Moreno - Integración Plantillas Pug y Validación Final
-- Paula Berni - Feature: Sucursales
+- Paula Beni - Feature: Sucursales
 - Melissa Galeano - Feature: Productos
-- Leandro Parys - Feature: Pedidos
+- Leandro Paryszewski - Feature: Pedidos
 - Marcelo Moreno - Fundaciones, Shared y Documentación
