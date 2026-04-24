@@ -1,12 +1,4 @@
 {
   "sucursales": [
-    {
-      "id": "8e7eaf00-7d31-454a-a066-8cfbe1fc3796",
-      "nombre": "asd",
-      "tipo": "sucursal",
-      "direccion": "ads",
-      "activa": true,
-      "fechaCreacion": "2026-04-24T00:21:16.298Z"
-    }
   ]
 }
