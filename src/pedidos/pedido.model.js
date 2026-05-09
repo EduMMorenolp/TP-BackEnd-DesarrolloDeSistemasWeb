@@ -1,10 +1,6 @@
-const { v4: uuidv4 } = require('uuid');
-const { store, saveStore } = require('../shared/store');
+import { v4 as uuidv4 } from 'uuid';
+import { store, saveStore } from '../shared/store.js';
 
-/**
- * Función para crear un pedido con los campos base requeridos.
- * Según el brief: id, sucursalId, productos, observaciones, estado, fechaPedido y fechaActualizacion.
- */
 const createPedido = (data) => {
     const nuevoPedido = {
         id: uuidv4(),
@@ -39,9 +35,4 @@ const updatePedidoInDb = (id, updatedData) => {
     return null;
 };
 
-module.exports = {
-    createPedido,
-    getAll,
-    getById,
-    updatePedidoInDb
-};
+export { createPedido, getAll, getById, updatePedidoInDb };

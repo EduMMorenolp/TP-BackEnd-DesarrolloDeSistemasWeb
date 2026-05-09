@@ -1,15 +1,15 @@
-const productoService = require('./producto.service');
+import * as productoService from './producto.service.js';
 
-const crearProducto = (req, res, next) => {
+export const crearProducto = (req, res, next) => {
   try {
     const nuevo = productoService.crear(req.body);
     res.status(201).json(nuevo);
   } catch (err) {
-    next(err); // Esto lo envía al errorHandler.js
+    next(err);
   }
 };
 
-const obtenerCatalogo = (req, res, next) => {
+export const obtenerCatalogo = (req, res, next) => {
   try {
     const productos = productoService.listar();
     res.status(200).json(productos);
@@ -18,7 +18,7 @@ const obtenerCatalogo = (req, res, next) => {
   }
 };
 
-const obtenerProductoPorId = (req, res, next) => {
+export const obtenerProductoPorId = (req, res, next) => {
   try {
     const { id } = req.params;
     const producto = productoService.obtenerPorId(id);
@@ -28,7 +28,7 @@ const obtenerProductoPorId = (req, res, next) => {
   }
 };
 
-const actualizarProducto = (req, res, next) => {
+export const actualizarProducto = (req, res, next) => {
   try {
     const { id } = req.params;
     const productoActualizado = productoService.actualizar(id, req.body);
@@ -38,7 +38,7 @@ const actualizarProducto = (req, res, next) => {
   }
 };
 
-const eliminarProducto = (req, res, next) => {
+export const eliminarProducto = (req, res, next) => {
   try {
     const { id } = req.params;
     productoService.eliminar(id);
@@ -47,5 +47,3 @@ const eliminarProducto = (req, res, next) => {
     next(err);
   }
 };
-
-module.exports = { crearProducto, obtenerCatalogo, obtenerProductoPorId, actualizarProducto, eliminarProducto };

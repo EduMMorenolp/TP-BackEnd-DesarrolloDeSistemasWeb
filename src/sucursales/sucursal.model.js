@@ -1,16 +1,32 @@
-const { v4: uuidv4 } = require('uuid');
+import mongoose from '../config/db.js';
 
-function createSucursal({ nombre, tipo, direccion }) {
-  return {
-    id: uuidv4(),
-    nombre,
-    tipo,
-    direccion,
-    activa: true,
-    fechaCreacion: new Date().toISOString()
-  };
-}
+const sucursalSchema = new mongoose.Schema({
+  nombre: {
+    type: String,
+    required: [true, 'El nombre es obligatorio']
+  },
+  tipo: {
+    type: String,
+    required: [true, 'El tipo es obligatorio'],
+    enum: {
+      values: ['sucursal', 'franquicia'],
+      message: 'El tipo debe ser "sucursal" o "franquicia"'
+    }
+  },
+  direccion: {
+    type: String,
+    required: [true, 'La direccion es obligatoria']
+  },
+  activa: {
+    type: Boolean,
+    default: true
+  },
+  fechaCreacion: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-module.exports = {
-  createSucursal
-};
+const Sucursal = mongoose.model('Sucursal', sucursalSchema);
+
+export default Sucursal;

@@ -1,11 +1,10 @@
+import * as pedidoModel from './pedido.model.js';
+import { store, saveStore } from '../shared/store.js';
+import { esSucursalActiva } from '../sucursales/sucursal.service.js';
+import { obtenerProductosPorIds } from '../productos/producto.service.js';
+import Sucursal from '../sucursales/sucursal.model.js';
 
-
-const pedidoModel = require('./pedido.model');
-const { store, saveStore } = require('../shared/store');
-const { esSucursalActiva } = require('../sucursales/sucursal.service');
-const { obtenerProductosPorIds } = require('../productos/producto.service');
-
-const crear = (datos) => {
+export const crear = async (datos) => {
     const { sucursalId, productos, observaciones } = datos;
 
     if (!sucursalId || !productos || !Array.isArray(productos) || productos.length === 0) {
@@ -14,8 +13,9 @@ const crear = (datos) => {
         throw error;
     }
 
-    if (!esSucursalActiva(sucursalId)) {
-        const error = new Error(`La sucursal con id '${sucursalId}' no está activa`);
+    const activa = await esSucursalActiva(sucursalId);
+    if (!activa) {
+        const error = new Error(`La sucursal con id '${sucursalId}' no esta activa`);
         error.status = 400;
         throw error;
     }
@@ -23,7 +23,7 @@ const crear = (datos) => {
     const productoIds = productos.map(p => p.productoId);
     const productosEncontrados = obtenerProductosPorIds(productoIds);
     if (productosEncontrados.length !== productoIds.length) {
-        const error = new Error("Uno o más productos no existen");
+        const error = new Error("Uno o mas productos no existen");
         error.status = 400;
         throw error;
     }
@@ -31,21 +31,25 @@ const crear = (datos) => {
     return pedidoModel.createPedido({ sucursalId, productos, observaciones });
 };
 
-const listar = () => {
-    return store.pedidos.map(pedido => populatePedido(pedido));
+export const listar = async () => {
+    const pedidos = [];
+    for (const pedido of store.pedidos) {
+        pedidos.push(await populatePedido(pedido));
+    }
+    return pedidos;
 };
 
-const obtenerPorId = (id) => {
+export const obtenerPorId = async (id) => {
     const pedido = store.pedidos.find(p => p.id === id);
     if (!pedido) {
         const error = new Error(`Pedido con id '${id}' no encontrado`);
         error.status = 404;
         throw error;
     }
-    return populatePedido(pedido);
+    return await populatePedido(pedido);
 };
 
-const cambiarEstado = (id, nuevoEstado) => {
+export const cambiarEstado = (id, nuevoEstado) => {
     const pedido = store.pedidos.find(p => p.id === id);
     if (!pedido) {
         const error = new Error(`Pedido con id '${id}' no encontrado`);
@@ -60,7 +64,7 @@ const cambiarEstado = (id, nuevoEstado) => {
     };
 
     if (!transicionesValidas[pedido.estado] || !transicionesValidas[pedido.estado].includes(nuevoEstado)) {
-        const error = new Error(`Transición inválida: no se puede pasar de '${pedido.estado}' a '${nuevoEstado}'`);
+        const error = new Error(`Transicion invalida: no se puede pasar de '${pedido.estado}' a '${nuevoEstado}'`);
         error.status = 400;
         throw error;
     }
@@ -68,7 +72,7 @@ const cambiarEstado = (id, nuevoEstado) => {
     return pedidoModel.updatePedidoInDb(id, { estado: nuevoEstado });
 };
 
-const cancelar = (id) => {
+export const cancelar = (id) => {
     const pedido = store.pedidos.find(p => p.id === id);
     if (!pedido) {
         const error = new Error(`Pedido con id '${id}' no encontrado`);
@@ -77,7 +81,7 @@ const cancelar = (id) => {
     }
 
     if (pedido.estado !== 'pendiente') {
-        const error = new Error("No se puede cancelar: el pedido no está en estado 'pendiente'");
+        const error = new Error("No se puede cancelar: el pedido no esta en estado 'pendiente'");
         error.status = 409;
         throw error;
     }
@@ -88,8 +92,8 @@ const cancelar = (id) => {
     return { message: 'Pedido cancelado exitosamente' };
 };
 
-const populatePedido = (pedido) => {
-    const sucursal = store.sucursales.find(s => s.id === pedido.sucursalId);
+const populatePedido = async (pedido) => {
+    const sucursal = await Sucursal.findById(pedido.sucursalId);
     const productosPopulados = pedido.productos.map(item => {
         const producto = store.productos.find(p => p.id === item.productoId);
         return {
@@ -102,19 +106,11 @@ const populatePedido = (pedido) => {
 
     return {
         id: pedido.id,
-        sucursal: sucursal ? { id: sucursal.id, nombre: sucursal.nombre, tipo: sucursal.tipo } : null,
+        sucursal: sucursal ? { id: sucursal._id.toString(), nombre: sucursal.nombre, tipo: sucursal.tipo } : null,
         productos: productosPopulados,
         estado: pedido.estado,
         observaciones: pedido.observaciones,
         fechaPedido: pedido.fechaPedido,
         fechaActualizacion: pedido.fechaActualizacion
     };
-};
-
-module.exports = {
-    crear,
-    listar,
-    obtenerPorId,
-    cambiarEstado,
-    cancelar
 };

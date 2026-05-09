@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const pedidoController = require('./pedido.controller');
+import * as pedidoController from './pedido.controller.js';
 
 router.get('/', pedidoController.listar);
 router.get('/:id', pedidoController.obtenerPorId);
@@ -8,4 +8,4 @@ router.post('/', pedidoController.crear);
 router.patch('/:id/estado', pedidoController.cambiarEstado);
 router.delete('/:id', pedidoController.cancelar);
 
-module.exports = router;
+export default router;

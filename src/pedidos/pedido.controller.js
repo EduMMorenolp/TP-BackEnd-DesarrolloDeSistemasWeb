@@ -1,33 +1,33 @@
-const pedidoService = require('./pedido.service');
+import * as pedidoService from './pedido.service.js';
 
-const listar = (req, res, next) => {
+export const listar = async (req, res, next) => {
     try {
-        const pedidos = pedidoService.listar();
+        const pedidos = await pedidoService.listar();
         res.status(200).json(pedidos);
     } catch (error) {
         next(error);
     }
 };
 
-const obtenerPorId = (req, res, next) => {
+export const obtenerPorId = async (req, res, next) => {
     try {
-        const pedido = pedidoService.obtenerPorId(req.params.id);
+        const pedido = await pedidoService.obtenerPorId(req.params.id);
         res.status(200).json(pedido);
     } catch (error) {
         next(error);
     }
 };
 
-const crear = (req, res, next) => {
+export const crear = async (req, res, next) => {
     try {
-        const nuevoPedido = pedidoService.crear(req.body);
+        const nuevoPedido = await pedidoService.crear(req.body);
         res.status(201).json(nuevoPedido);
     } catch (error) {
         next(error);
     }
 };
 
-const cambiarEstado = (req, res, next) => {
+export const cambiarEstado = (req, res, next) => {
     try {
         const pedidoActualizado = pedidoService.cambiarEstado(req.params.id, req.body.estado);
         res.status(200).json(pedidoActualizado);
@@ -36,19 +36,11 @@ const cambiarEstado = (req, res, next) => {
     }
 };
 
-const cancelar = (req, res, next) => {
+export const cancelar = (req, res, next) => {
     try {
         const resultado = pedidoService.cancelar(req.params.id);
         res.status(200).json(resultado);
     } catch (error) {
         next(error);
     }
-};
-
-module.exports = {
-    listar,
-    obtenerPorId,
-    crear,
-    cambiarEstado,
-    cancelar
 };

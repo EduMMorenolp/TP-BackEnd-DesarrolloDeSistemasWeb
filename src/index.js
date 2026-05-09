@@ -1,20 +1,23 @@
-const express = require('express');
+import 'dotenv/config';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Importar routers de cada módulo
-const sucursalRoutes = require('./sucursales/sucursal.routes');
-const productoRoutes = require('./productos/producto.routes');
-const pedidoRoutes = require('./pedidos/pedido.routes');
+import { connectDB } from './config/db.js';
+import sucursalRoutes from './sucursales/sucursal.routes.js';
+import productoRoutes from './productos/producto.routes.js';
+import pedidoRoutes from './pedidos/pedido.routes.js';
+import errorHandler from './shared/errorHandler.js';
 
-// Importar middleware global de errores
-const errorHandler = require('./shared/errorHandler');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
-
+const PORT = process.env.PORT || 3000;
 
 // Configurar el motor de plantillas (Pug)
 app.set('view engine', 'pug');
-app.set('views', './src/view');
+app.set('views', path.join(__dirname, 'view'));
 
 // Middleware para parsear JSON
 app.use(express.json());
@@ -56,8 +59,15 @@ app.get('/productos', function (req, res) {
 // Middleware global de manejo de errores (siempre al final)
 app.use(errorHandler);
 
-// Iniciar el servidor
-app.listen(PORT, () => {
+// Conectar a MongoDB y luego iniciar el servidor
+async function start() {
+  await connectDB();
+  app.listen(PORT, () => {
     console.log(`Servidor La Espiga de Oro corriendo en http://localhost:${PORT}`);
-});
+  });
+}
 
+start().catch((err) => {
+  console.error('Error al iniciar el servidor:', err.message);
+  process.exit(1);
+});

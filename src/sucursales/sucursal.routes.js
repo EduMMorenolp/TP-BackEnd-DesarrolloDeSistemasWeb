@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const controller = require('./sucursal.controller');
+import * as controller from './sucursal.controller.js';
 
 router.get('/', controller.listar);
 
@@ -12,4 +12,4 @@ router.put('/:id', controller.actualizar);
 
 router.delete('/:id', controller.desactivar);
 
-module.exports = router;
+export default router;

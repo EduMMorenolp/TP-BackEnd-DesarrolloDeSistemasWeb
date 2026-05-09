@@ -1,6 +1,4 @@
-//Función para crear un producto con sus campos requeridos.
-// 
-const { v4: uuid } = require('uuid');
+import { v4 as uuid } from 'uuid';
 
 const createProducto = ({ nombre, descripcion, precio, categoria }) => {
   const nuevoProducto = {
@@ -14,6 +12,6 @@ const createProducto = ({ nombre, descripcion, precio, categoria }) => {
   };
 
   return nuevoProducto;
-}
+};
 
-module.exports = { createProducto };
+export { createProducto };

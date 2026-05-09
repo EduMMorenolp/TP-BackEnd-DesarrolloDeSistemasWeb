@@ -1,39 +1,21 @@
-const { createSucursal } = require('./sucursal.model');
-const { store, saveStore } = require('../shared/store');
+import Sucursal from './sucursal.model.js';
+import { store } from '../shared/store.js';
 
-//Validar campos obligatorios
-function validar({ nombre, tipo, direccion }) {
-  if (!nombre || !tipo || !direccion) {
-    const error = new Error('Faltan datos obligatorios');
-    error.status = 400;
-    throw error;
-  }
-
-  if (tipo !== 'sucursal' && tipo !== 'franquicia') {
-    const error = new Error('Tipo inválido');
-    error.status = 400;
-    throw error;
-  }
+// Crear sucursal
+export async function crear(data) {
+  const sucursal = new Sucursal(data);
+  await sucursal.save();
+  return sucursal;
 }
 
-//Crear sucursal
-function crear(data) {
-  validar(data);
-
-  const nueva = createSucursal(data);
-  store.sucursales.push(nueva);
-  saveStore();
-
-  return nueva;
-}
-//Listar sucursales
-function listar() {
-  return store.sucursales;
+// Listar sucursales
+export async function listar() {
+  return await Sucursal.find();
 }
 
-//Buscar sucursal por ID
-function obtenerPorId(id) {
-  const sucursal = store.sucursales.find(s => s.id === id);
+// Buscar sucursal por ID
+export async function obtenerPorId(id) {
+  const sucursal = await Sucursal.findById(id);
 
   if (!sucursal) {
     const error = new Error('Sucursal no encontrada');
@@ -44,24 +26,35 @@ function obtenerPorId(id) {
   return sucursal;
 }
 
-// Actualizar datos 
-function actualizar(id, data) {
-  const sucursal = obtenerPorId(id);
+// Actualizar datos
+export async function actualizar(id, data) {
+  const sucursal = await Sucursal.findByIdAndUpdate(
+    id,
+    { $set: data },
+    { new: true, runValidators: true }
+  );
 
-  if (data.nombre) sucursal.nombre = data.nombre;
-  if (data.tipo) sucursal.tipo = data.tipo;
-  if (data.direccion) sucursal.direccion = data.direccion;
-
-  saveStore();
+  if (!sucursal) {
+    const error = new Error('Sucursal no encontrada');
+    error.status = 404;
+    throw error;
+  }
 
   return sucursal;
 }
 
-//Desactivar sucursal
-function desactivar(id) {
-  const sucursal = obtenerPorId(id);
+// Desactivar sucursal
+export async function desactivar(id) {
+  const sucursal = await Sucursal.findById(id);
+
+  if (!sucursal) {
+    const error = new Error('Sucursal no encontrada');
+    error.status = 404;
+    throw error;
+  }
 
   // Validar que no tenga pedidos activos (estado !== "entregado")
+  // Como pedidos todavia usan store.js, consultamos ahi
   const tienePedidosActivos = store.pedidos.some(pedido =>
     pedido.sucursalId === id && pedido.estado !== "entregado"
   );
@@ -73,22 +66,13 @@ function desactivar(id) {
   }
 
   sucursal.activa = false;
-  saveStore();
+  await sucursal.save();
 
   return sucursal;
 }
 
-//Ver sucursales activas
-function esSucursalActiva(id) {
-  const sucursal = store.sucursales.find(s => s.id === id);
+// Verificar si una sucursal esta activa
+export async function esSucursalActiva(id) {
+  const sucursal = await Sucursal.findById(id);
   return sucursal ? sucursal.activa : false;
 }
-
-module.exports = {
-  crear,
-  listar,
-  obtenerPorId,
-  actualizar,
-  desactivar,
-  esSucursalActiva
-};
