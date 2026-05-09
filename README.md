@@ -14,11 +14,25 @@ Arquitectura feature-based con separación clara de responsabilidades:
 - **Controller**: Manejo de req/res HTTP
 - **Routes**: Definición de endpoints
 
+## Requisitos
+
+- **Node.js** 18+
+- **MongoDB** 7+ (local o via Docker)
+
+```bash
+# Con Docker (recomendado)
+docker run -d --name mongodb -p 27017:27017 mongo:7
+```
+
 ## Instalación
 
 ```bash
 # Instalar dependencias
 npm install
+
+# Configurar variables de entorno (copiar .env de ejemplo)
+# MONGODB_URI=mongodb://localhost:27017/laespiga
+# PORT=3000
 
 # Ejecutar en modo desarrollo
 npm run dev
@@ -32,25 +46,29 @@ npm start
 ```
 espiga-de-oro/
 ├── src/
-│   ├── sucursales/          # CRUD de sucursales
-│   │   ├── sucursal.model.js
+│   ├── config/
+│   │   └── db.js              # Conexion a MongoDB con Mongoose
+│   ├── sucursales/            # CRUD de sucursales (MongoDB)
+│   │   ├── sucursal.model.js  # Schema de Mongoose
 │   │   ├── sucursal.service.js
 │   │   ├── sucursal.controller.js
 │   │   └── sucursal.routes.js
-│   ├── productos/           # CRUD de productos
+│   ├── productos/             # CRUD de productos
 │   │   ├── producto.model.js
 │   │   ├── producto.service.js
 │   │   ├── producto.controller.js
 │   │   └── producto.routes.js
-│   ├── pedidos/             # CRUD de pedidos con populate
+│   ├── pedidos/               # CRUD de pedidos con populate
 │   │   ├── pedido.model.js
 │   │   ├── pedido.service.js
 │   │   ├── pedido.controller.js
 │   │   └── pedido.routes.js
-│   ├── shared/              # Recursos compartidos
-│   │   ├── store.js         # Arrays en memoria
-│   │   └── errorHandler.js  # Middleware global de errores
-│   └── index.js             # Entry point del servidor
+│   ├── shared/                # Recursos compartidos
+│   │   ├── store.js           # Persistencia en JSON (prod/pedidos)
+│   │   └── errorHandler.js    # Middleware global de errores
+│   ├── view/                  # Vistas Pug
+│   └── index.js               # Entry point
+├── .env                       # Variables de entorno
 ├── package.json
 ├── README.md
 └── postman_collection.json
@@ -97,9 +115,12 @@ espiga-de-oro/
 ## Tecnologías Utilizadas
 
 - **Node.js**: Runtime de JavaScript
-- **Express.js**: Framework web
-- **UUID**: Generación de IDs únicos
-- **Pug**: Motor de plantillas (opcional para vistas)
+- **Express.js 5**: Framework web
+- **MongoDB**: Base de datos NoSQL
+- **Mongoose**: ODM para MongoDB
+- **dotenv**: Variables de entorno
+- **UUID**: Generación de IDs únicos (en migración a ObjectId de MongoDB)
+- **Pug**: Motor de plantillas para vistas
 
 ## Despliegue
 
