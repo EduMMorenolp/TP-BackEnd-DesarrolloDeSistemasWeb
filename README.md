@@ -20,8 +20,86 @@ Arquitectura feature-based con separación clara de responsabilidades:
 - **MongoDB** 7+ (local o via Docker)
 
 ```bash
-# Con Docker (recomendado)
+# Opción 1: Con Docker (recomendado)
 docker run -d --name mongodb -p 27017:27017 mongo:7
+```
+
+---
+
+### Opción 2: Instalación directa en Windows
+
+1. **Descargar MongoDB Community Server** desde:
+   https://www.mongodb.com/try/download/community
+
+2. **Elegir la versión**:
+   - Package: `msi`
+   - Version: `7.0.XX` (o la más reciente de la 7.x)
+   - OS: `Windows x64`
+   - Installer: `MSI`
+
+3. **Ejecutar el instalador**:
+   - Marcar "Complete" (instalación completa)
+   - Desmarcar "Install MongoDB Compass" (opcional, es solo la GUI)
+   - Marcar "Install MongoD as a Service" → "Run service as Network Service user"
+   - La instalación por defecto va en `C:\Program Files\MongoDB\Server\7.0\bin`
+
+4. **Verificar que MongoDB esté corriendo**:
+   ```bash
+   # En PowerShell (como Administrador)
+   Start-Service MongoDB
+   
+   # O verificar estado
+   Get-Service MongoDB
+   ```
+
+5. **Crear el directorio de datos** (si no se creó solo):
+   ```bash
+   mongod --dbpath "C:\data\db"
+   ```
+
+6. **Opcional: MongoDB Compass** (GUI para visualizar datos):
+   https://www.mongodb.com/products/compass
+
+---
+
+### Opción 3: En Linux (WSL2 o Ubuntu)
+
+```bash
+# Instalar MongoDB
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt-get update
+sudo apt-get install -y mongodb-org
+
+# Iniciar servicio
+sudo systemctl start mongod
+```
+
+---
+
+### Opción 4: En macOS
+
+```bash
+# Con Homebrew
+brew tap mongodb/brew
+brew install mongodb-community@7.0
+
+# Iniciar como servicio
+brew services start mongodb-community@7.0
+```
+
+---
+
+### Verificar conexión
+
+Independientemente del método elegido, el sistema se conectará a:
+```
+mongodb://localhost:27017/laespiga
+```
+
+Para verificar que MongoDB responde:
+```bash
+mongosh --eval "db.adminCommand('ping')"
 ```
 
 ## Instalación
@@ -30,9 +108,8 @@ docker run -d --name mongodb -p 27017:27017 mongo:7
 # Instalar dependencias
 npm install
 
-# Configurar variables de entorno (copiar .env de ejemplo)
-# MONGODB_URI=mongodb://localhost:27017/laespiga
-# PORT=3000
+# Crear .env a partir del ejemplo
+cp .env.example .env
 
 # Ejecutar en modo desarrollo
 npm run dev
