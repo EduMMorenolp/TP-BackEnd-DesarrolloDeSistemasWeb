@@ -129,16 +129,19 @@ html(lang="es")
 
 			function fila(s) {
 				const tr = document.createElement('tr');
+				const btnAccion = s.activa === false
+					? `<button type="button" data-on="${s._id}">Activar</button>`
+					: `<button type="button" data-off="${s._id}">Desactivar</button>`;
 				tr.innerHTML = `
-					<td>${s.id || '-'}</td>
+					<td>${s._id || '-'}</td>
 					<td>${s.nombre || '-'}</td>
 					<td>${s.tipo || '-'}</td>
 					<td>${s.direccion || '-'}</td>
 					<td>${s.activa === false ? 'No' : 'Si'}</td>
 					<td>${s.fechaCreacion || '-'}</td>
 					<td>
-						<button type="button" data-edit="${s.id}">Editar</button>
-						<button type="button" data-off="${s.id}">Desactivar</button>
+						<button type="button" data-edit="${s._id}">Editar</button>
+						${btnAccion}
 					</td>
 				`;
 				return tr;
@@ -190,6 +193,7 @@ html(lang="es")
 				if (!btn) return;
 				const idEdit = btn.getAttribute('data-edit');
 				const idOff = btn.getAttribute('data-off');
+				const idOn = btn.getAttribute('data-on');
 				try {
 					if (idEdit) {
 						const nombre = prompt('Nuevo nombre:');
@@ -213,6 +217,15 @@ html(lang="es")
 						const data = await res.json();
 						if (!res.ok) throw new Error(data.error || 'No se pudo desactivar');
 						setMsg('Sucursal desactivada');
+						await cargarSucursales();
+					}
+					if (idOn) {
+						const ok = confirm('Activar sucursal?');
+						if (!ok) return;
+						const res = await fetch(`/api/sucursales/${idOn}/activar`, { method: 'PATCH' });
+						const data = await res.json();
+						if (!res.ok) throw new Error(data.error || 'No se pudo activar');
+						setMsg('Sucursal activada');
 						await cargarSucursales();
 					}
 				} catch (err) {

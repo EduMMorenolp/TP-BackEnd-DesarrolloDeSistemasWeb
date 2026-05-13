@@ -65,3 +65,35 @@ Migración del dominio de Sucursales de archivos JSON a MongoDB con Mongoose. Se
 - [PRD #3](https://github.com/EduMMorenolp/TP-BackEnd-DesarrolloDeSistemasWeb/issues/3): Migración a MongoDB, Async/Await y ES6 Imports
 - Definición de 4 slices con dependencias y criterios de aceptación
 - 11 decisiones de arquitectura documentadas
+
+---
+
+## Slice 1 — Ajustes: Activar sucursal + Fix Pug (2026-05-13)
+
+**Asistido por IA** (Deepseek v4 + OpenCode + Engram Memory)
+
+### Resumen
+
+Sesión de testing y ajustes sobre el Slice 1. Se detectó un bug en el frontend Pug que impedía editar y desactivar sucursales (usaba `s.id` en vez de `s._id`). Se agregó el endpoint de reactivación de sucursales (`PATCH /activar`) con su lógica en service/controller/routes. Se actualizó el Pug con botón condicional que muestra "Activar" o "Desactivar" según el estado.
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/view/sucursales.pug` | Fix `s.id` → `s._id` en fila() y botones (3 lugares). Botón condicional Activar/Desactivar. Handler `data-on` para PATCH. |
+| `src/sucursales/sucursal.service.js` | Nuevo — `activar(id)`: busca sucursal, pone `activa = true`, guarda |
+| `src/sucursales/sucursal.controller.js` | Nuevo — handler `activar(req, res, next)` con try/catch |
+| `src/sucursales/sucursal.routes.js` | Nueva ruta `PATCH /:id/activar` |
+
+**Total: 4 archivos modificados**
+
+### Logros
+
+- El CRUD de sucursales ahora es completo: Crear, Leer, Actualizar, Desactivar (soft), Activar
+- El frontend refleja correctamente el estado con botón contextual
+- Solucionado el CastError `"undefined" (type string) at path "_id"` causado por `s.id` inexistente
+- Probado con MongoDB en Docker + Postman + frontend Pug
+
+### Bugs solucionados
+
+- **CastError al editar/desactivar desde Pug**: `s.id` devolvía `undefined` porque Mongoose serializa `_id`, no `id`. Solución: usar `s._id` en el template.

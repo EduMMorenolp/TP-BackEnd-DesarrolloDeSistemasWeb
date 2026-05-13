@@ -12,4 +12,6 @@ router.put('/:id', controller.actualizar);
 
 router.delete('/:id', controller.desactivar);
 
+router.patch('/:id/activar', controller.activar);
+
 export default router;

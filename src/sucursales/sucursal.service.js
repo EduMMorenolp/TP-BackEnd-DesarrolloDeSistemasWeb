@@ -71,6 +71,22 @@ export async function desactivar(id) {
   return sucursal;
 }
 
+// Activar sucursal
+export async function activar(id) {
+  const sucursal = await Sucursal.findById(id);
+
+  if (!sucursal) {
+    const error = new Error('Sucursal no encontrada');
+    error.status = 404;
+    throw error;
+  }
+
+  sucursal.activa = true;
+  await sucursal.save();
+
+  return sucursal;
+}
+
 // Verificar si una sucursal esta activa
 export async function esSucursalActiva(id) {
   const sucursal = await Sucursal.findById(id);

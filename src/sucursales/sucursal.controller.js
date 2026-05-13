@@ -44,3 +44,12 @@ export async function desactivar(req, res, next) {
     next(error);
   }
 }
+
+export async function activar(req, res, next) {
+  try {
+    const data = await service.activar(req.params.id);
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+}
