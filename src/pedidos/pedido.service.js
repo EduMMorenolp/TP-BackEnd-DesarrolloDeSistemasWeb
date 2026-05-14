@@ -16,8 +16,8 @@ export const crear = async (datos) => {
     
     // 2. Validar que los productos existan (todavía contra store.js)
     const productoIds = productos.map(p => p.productoId);
-    const productosEncontrados = obtenerProductosPorIds(productoIds);
-    if (productosEncontrados.length !== productoIds.length) {
+    const productosEncontrados = await obtenerProductosPorIds(productoIds);
+    if (productosEncontrados.length !== productos.length) {
         const error = new Error("Uno o mas productos no existen");
         error.status = 400;
         throw error;
@@ -26,7 +26,7 @@ export const crear = async (datos) => {
     // 3. Desnormalizar datos de productos para guardar en el pedido
     // Esto crea una "foto" del nombre y precio al momento de la compra.
     const productosParaGuardar = productos.map(item => {
-        const productoCompleto = productosEncontrados.find(p => p.id === item.productoId);
+        const productoCompleto = productosEncontrados.find(p => p._id.toString() === item.productoId);
         return {
             productoId: item.productoId,
             cantidad: item.cantidad,

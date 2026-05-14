@@ -1,5 +1,5 @@
 import Producto from './producto.model.js';
-import { store } from '../shared/store.js';
+import Pedido from '../pedidos/pedido.model.js';
 
 // Crear producto
 export async function crear(data) {
@@ -14,16 +14,21 @@ export async function listar() {
 }
 
 
-// Buscar producto por ID
-export async function obtenerProductosPorIds(id) {
-  const producto = await Producto.findById(id);
-  if (!producto) {
+// Buscar producto por un array de IDs
+export async function obtenerProductosPorIds(ids) {
+// ids es un array que viene de pedido.service
+  const productos = await Producto.find({
+    _id: { $in: ids }
+  });  
+
+
+  if (!productos || productos.length === 0) {
     const err = new Error('Producto no encontrado');
     err.status = 404;
     throw err;
   }
 
-  return producto;
+  return productos;
 }
 
 
@@ -71,9 +76,10 @@ export async function eliminar(id) {
   }
 
  // Regla de negocio: Validar contra pedidos en store.js (memoria)
-  const productoEnUso = store.pedidos.some(pedido => 
-    pedido.productos.includes(id) && pedido.estado !== 'entregado'
-  );
+  const productoEnUso = await Pedido.findOne({
+    'productos.productoId': id,       // Busca dentro del array de productos del pedido
+    estado: { $ne: 'entregado' }      // Que el estado NO sea 'entregado'
+  });
 
   if (productoEnUso) {
     const err = new Error("No se puede eliminar: el producto forma parte de un pedido activo");
