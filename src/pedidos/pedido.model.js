@@ -1,38 +1,71 @@
-import { v4 as uuidv4 } from 'uuid';
-import { store, saveStore } from '../shared/store.js';
+import mongoose from '../config/db.js';
 
-const createPedido = (data) => {
-    const nuevoPedido = {
-        id: uuidv4(),
-        sucursalId: data.sucursalId,
-        productos: data.productos,
-        observaciones: data.observaciones || '',
-        estado: 'pendiente',
-        fechaPedido: new Date().toISOString(),
-        fechaActualizacion: new Date().toISOString()
-    };
+// Schema para los items dentro de un pedido.
+const itemPedidoSchema = new mongoose.Schema({
+  productoId: {
+    // Los productos aún no están en MongoDB (Slice 2), por lo que usamos String para el UUID.
+    // No se puede usar `ref` sin un ObjectId.
+    type: String,
+    required: true,
+  },
+  cantidad: {
+    type: Number,
+    required: true,
+    min: [1, 'La cantidad debe ser al menos 1'],
+  },
+  // Desnormalizamos nombre y precio para mantener un registro histórico del pedido,
+  // incluso si el producto original cambia sus valores.
+  nombre: {
+    type: String,
+    required: true,
+  },
+  precio: {
+    type: Number,
+    required: true,
+  },
+}, { _id: false }); // No se necesitan IDs para estos subdocumentos.
 
-    store.pedidos.push(nuevoPedido);
-    saveStore();
-    return nuevoPedido;
-};
+const pedidoSchema = new mongoose.Schema({
+  sucursalId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sucursal',
+    required: [true, 'El ID de la sucursal es obligatorio'],
+  },
+  productos: {
+    type: [itemPedidoSchema],
+    required: true,
+    // Valida que el array de productos no esté vacío.
+    validate: [v => Array.isArray(v) && v.length > 0, 'El pedido debe tener al menos un producto'],
+  },
+  estado: {
+    type: String,
+    required: true,
+    enum: {
+      values: ['pendiente', 'en_produccion', 'despachado', 'entregado'],
+      message: 'El estado proporcionado no es válido',
+    },
+    default: 'pendiente',
+  },
+  observaciones: {
+    type: String,
+    default: '',
+  },
+}, {
+  // Mongoose manejará createdAt y updatedAt, que mapeamos a nuestros campos existentes.
+  timestamps: {
+    createdAt: 'fechaPedido',
+    updatedAt: 'fechaActualizacion',
+  },
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+});
 
-const getAll = () => store.pedidos;
+// Creamos un campo virtual 'id' para mantener compatibilidad con el frontend
+// y las respuestas de la API que esperan 'id' en lugar de '_id'.
+pedidoSchema.virtual('id').get(function() {
+  return this._id.toHexString();
+});
 
-const getById = (id) => store.pedidos.find(p => p.id === id);
+const Pedido = mongoose.model('Pedido', pedidoSchema);
 
-const updatePedidoInDb = (id, updatedData) => {
-    const index = store.pedidos.findIndex(p => p.id === id);
-    if (index !== -1) {
-        store.pedidos[index] = {
-            ...store.pedidos[index],
-            ...updatedData,
-            fechaActualizacion: new Date().toISOString()
-        };
-        saveStore();
-        return store.pedidos[index];
-    }
-    return null;
-};
-
-export { createPedido, getAll, getById, updatePedidoInDb };
+export default Pedido;
