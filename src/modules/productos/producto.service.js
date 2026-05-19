@@ -1,31 +1,30 @@
-import Producto from './producto.model.js';
-import Pedido from '../pedidos/pedido.model.js';
+import { store, saveStore } from '../../shared/store.js';
+import { createProducto } from '../productos/producto.model.js';
 
-// Crear producto
-export async function crear(data) {
-  const producto = new Producto(data);
-  await producto.save();
-  return producto;
-}
+export const crear = (datos) => {
+  const { nombre, precio, categoria } = datos;
 
-// Listar productos
-export async function listar() {
-  return await Producto.find();
-}
+  if (!nombre || typeof nombre !== 'string' || precio <= 0 || !categoria) {
+    const error = new Error("El campo 'precio' debe ser un numero mayor a 0 y los campos obligatorios deben estar presentes");
+    error.status = 400;
+    throw error;
+  }
 
+  const nuevoProducto = createProducto(datos);
+  store.productos.push(nuevoProducto);
+  saveStore();
+  return nuevoProducto;
+};
 
-// Buscar producto por un array de IDs
-export async function obtenerProductosPorIds(ids) {
-// ids es un array que viene de pedido.service
-  const productos = await Producto.find({
-    _id: { $in: ids }
-  });  
+export const listar = () => store.productos;
 
+export const obtenerPorId = (id) => {
+  const producto = store.productos.find(p => p.id === id);
 
-  if (!productos || productos.length === 0) {
-    const err = new Error('Producto no encontrado');
-    err.status = 404;
-    throw err;
+  if (!producto) {
+    const error = new Error("Producto no encontrado");
+    error.status = 404;
+    throw error;
   }
 
   return productos;
