@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { store, saveStore } from '../shared/store.js';
+import { store, saveStore } from '../../shared/store.js';
 
 const createPedido = (data) => {
     const nuevoPedido = {

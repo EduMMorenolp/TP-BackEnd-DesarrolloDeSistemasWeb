@@ -16,6 +16,8 @@ Implementación de un sistema de usuarios con roles y autenticación mediante JW
 - `postman_collection.json`: Añadidos endpoints de Autenticación y Usuarios con manejo automático de tokens.
 
 ### Logros ( Eduardo Moreno 18/05/2026 | Antigravity )
+- Implementación de un Seeder automático para generar sucursales y usuarios base (`ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`) al arrancar el servidor con DB vacía.
+- Refactorización de Arquitectura: Todas las funcionalidades de negocio (`auth`, `usuarios`, `pedidos`, `productos`, `sucursales`) se movieron dentro de la nueva carpeta `src/modules/` para mantener la raíz limpia y escalable.
 - CRUD de usuarios con contraseñas encriptadas con `bcryptjs`.
 - Login de usuarios que retorna token JWT.
 - Middlewares que protegen rutas usando validación de token y roles (`ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`).

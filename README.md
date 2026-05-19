@@ -102,6 +102,17 @@ Para verificar que MongoDB responde:
 mongosh --eval "db.adminCommand('ping')"
 ```
 
+## Seeding y Mantenimiento de Datos
+
+Al iniciar la aplicación (`npm run dev`), si la colección de usuarios está vacía, se ejecutará automáticamente un **seeder** que creará:
+- Dos sucursales de prueba (`Sucursal Central` y `Franquicia Demo`).
+- Cuatro usuarios base (uno por cada rol: `ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`) con la contraseña `password123`.
+
+Si necesitas **borrar todos los usuarios** para volver a disparar el seeder en el siguiente inicio del servidor, ejecuta este comando en tu terminal para limpiar la colección de usuarios en tu contenedor Docker:
+```bash
+docker exec -it mongodb mongosh laespiga --eval "db.usuarios.deleteMany({})"
+```
+
 ## Instalación
 
 ```bash

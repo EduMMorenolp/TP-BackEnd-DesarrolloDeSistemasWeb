@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import Usuario from '../../usuarios/usuario.model.js';
+import Usuario from '../../modules/usuarios/usuario.model.js';
 
 /**
  * Middleware para verificar que el token JWT sea válido

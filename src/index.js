@@ -4,12 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { connectDB } from './config/db.js';
-import sucursalRoutes from './sucursales/sucursal.routes.js';
-import productoRoutes from './productos/producto.routes.js';
-import pedidoRoutes from './pedidos/pedido.routes.js';
-import usuarioRoutes from './usuarios/usuario.routes.js';
-import authRoutes from './auth/auth.routes.js';
+import sucursalRoutes from './modules/sucursales/sucursal.routes.js';
+import productoRoutes from './modules/productos/producto.routes.js';
+import pedidoRoutes from './modules/pedidos/pedido.routes.js';
+import usuarioRoutes from './modules/usuarios/usuario.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 import errorHandler from './shared/errorHandler.js';
+import { seedDatabase } from './config/seed.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,7 @@ app.use(errorHandler);
 // Conectar a MongoDB y luego iniciar el servidor
 async function start() {
   await connectDB();
+  await seedDatabase();
   app.listen(PORT, () => {
     console.log(`Servidor La Espiga de Oro corriendo en http://localhost:${PORT}`);
   });

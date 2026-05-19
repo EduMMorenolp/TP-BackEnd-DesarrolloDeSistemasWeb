@@ -1,4 +1,4 @@
-import { store, saveStore } from '../shared/store.js';
+import { store, saveStore } from '../../shared/store.js';
 import { createProducto } from './producto.model.js';
 
 export const crear = (datos) => {

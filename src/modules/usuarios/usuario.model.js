@@ -43,19 +43,14 @@ const usuarioSchema = new mongoose.Schema({
 });
 
 // Middleware pre-save para encriptar la contraseña antes de guardarla
-usuarioSchema.pre('save', async function(next) {
+usuarioSchema.pre('save', async function() {
   // Solo hashear la contraseña si ha sido modificada (o es nueva)
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Método para verificar contraseña
