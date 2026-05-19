@@ -1,5 +1,28 @@
 # Changelog
 
+## Sistema de Usuarios, Roles y Autenticación (2026-05-18)
+
+**Asistido por IA** (Antigravity)
+
+### Resumen
+Implementación de un sistema de usuarios con roles y autenticación mediante JWT.
+
+### Archivos modificados/creados
+- `.env.example`: Agregadas variables de entorno `JWT_SECRET` y `JWT_EXPIRES_IN`.
+- `src/usuarios/*`: Creado módulo de Usuarios (model, service, controller, routes).
+- `src/auth/*`: Creado módulo de Autenticación para login y perfil (service, controller, routes).
+- `src/shared/middlewares/auth.middleware.js`: Creados middlewares `verifyToken` y `checkRole`.
+- `src/index.js`: Registrados los routers de `auth` y `usuarios`.
+- `postman_collection.json`: Añadidos endpoints de Autenticación y Usuarios con manejo automático de tokens.
+
+### Logros
+- CRUD de usuarios con contraseñas encriptadas con `bcryptjs`.
+- Login de usuarios que retorna token JWT.
+- Middlewares que protegen rutas usando validación de token y roles (`ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`).
+- Ruta abierta temporalmente en `POST /api/usuarios` para facilitar la creación del primer administrador.
+
+---
+
 ## Slice 1 — Sucursales en MongoDB + Infraestructura base (2026-05-09)
 
 **Asistido por IA** (Deepseek v4 + OpenCode + Engram Memory)

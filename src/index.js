@@ -7,6 +7,8 @@ import { connectDB } from './config/db.js';
 import sucursalRoutes from './sucursales/sucursal.routes.js';
 import productoRoutes from './productos/producto.routes.js';
 import pedidoRoutes from './pedidos/pedido.routes.js';
+import usuarioRoutes from './usuarios/usuario.routes.js';
+import authRoutes from './auth/auth.routes.js';
 import errorHandler from './shared/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +28,8 @@ app.use(express.json());
 app.use('/api/sucursales', sucursalRoutes);
 app.use('/api/productos', productoRoutes);
 app.use('/api/pedidos', pedidoRoutes);
+app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/auth', authRoutes);
 
 // Endpoint de health check
 app.get('/api/health', (req, res) => {
