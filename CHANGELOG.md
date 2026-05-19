@@ -7,7 +7,7 @@
 ### Resumen
 Implementación de un sistema de usuarios con roles y autenticación mediante JWT.
 
-### Archivos modificados/creados
+### Archivos modificados/creados ( Eduardo Moreno 18/05/2026 | Antigravity )
 - `.env.example`: Agregadas variables de entorno `JWT_SECRET` y `JWT_EXPIRES_IN`.
 - `src/usuarios/*`: Creado módulo de Usuarios (model, service, controller, routes).
 - `src/auth/*`: Creado módulo de Autenticación para login y perfil (service, controller, routes).
@@ -15,7 +15,7 @@ Implementación de un sistema de usuarios con roles y autenticación mediante JW
 - `src/index.js`: Registrados los routers de `auth` y `usuarios`.
 - `postman_collection.json`: Añadidos endpoints de Autenticación y Usuarios con manejo automático de tokens.
 
-### Logros
+### Logros ( Eduardo Moreno 18/05/2026 | Antigravity )
 - CRUD de usuarios con contraseñas encriptadas con `bcryptjs`.
 - Login de usuarios que retorna token JWT.
 - Middlewares que protegen rutas usando validación de token y roles (`ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`).
