@@ -1,5 +1,4 @@
 import Sucursal from './sucursal.model.js';
-import { store } from '../../shared/store.js';
 
 // Crear sucursal
 export async function crear(data) {
