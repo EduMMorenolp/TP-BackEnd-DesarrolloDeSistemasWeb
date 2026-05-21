@@ -1,5 +1,25 @@
 # Changelog
 
+## Migración Completa de Pedidos a MongoDB y Corrección de Errores (2026-05-20)
+
+**Asistido por IA** (Gemini CLI)
+
+### Resumen
+Finalización de la migración del dominio de Pedidos a MongoDB (Slice 3 del PRD), incluyendo la resolución de errores críticos en la creación de pedidos y la refactorización de la validación de dependencias entre módulos para saldar la deuda técnica.
+
+### Archivos modificados/creados
+- `src/modules/productos/producto.service.js`: Implementación de la función `obtenerProductosPorIds` para consultar múltiples productos simultáneamente en MongoDB.
+- `src/modules/pedidos/pedido.model.js`: Actualización del esquema `itemPedidoSchema` para utilizar `mongoose.Schema.Types.ObjectId` y mantener una referencia real (`ref: 'Producto'`) en lugar de un String.
+- `src/modules/sucursales/sucursal.service.js`: Refactorización de la función `desactivar` para validar la existencia de pedidos activos consultando directamente a la colección de MongoDB en lugar de usar la memoria volátil (`store.pedidos`).
+
+### Logros
+- Solución definitiva al error 500 en el endpoint `POST /api/pedidos` restaurando la funcionalidad de creación de pedidos.
+- Migración y vinculación 100% completada del modelo Pedido dentro de MongoDB aprovechando las referencias con ObjectId.
+- Deuda técnica resuelta: El sistema ya no depende del archivo `store.js` en memoria para las validaciones cruzadas entre dominios (sucursales y pedidos).
+- Ejecución y aprobación exitosa del 100% de la suite de pruebas (`test-script.mjs`) que validan criterios de aceptación, endpoints, y la máquina de estados.
+
+---
+
 ## Sistema de Usuarios, Roles y Autenticación (2026-05-18)
 
 **Asistido por IA** (Antigravity)
