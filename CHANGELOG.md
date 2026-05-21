@@ -1,5 +1,29 @@
 # Changelog
 
+## Seguridad: autenticación JWT aplicada a rutas API (2026-05-21)
+
+**Cambio Manual**
+
+### Resumen
+
+Se protegieron las rutas principales de la API con `verifyToken` desde `src/index.js`, dejando público solo el login de autenticación. Con esto, los recursos de sucursales, productos, pedidos y usuarios ya no quedan expuestos sin token.
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/index.js` | Feat: se aplicó `verifyToken` al registro de rutas API para exigir token en sucursales, productos, pedidos y usuarios. |
+
+### Logros
+
+- Las rutas de negocio de la API ahora requieren token JWT.
+- `POST /api/auth/login` se mantiene público para obtener el token.
+- Se centralizó la protección en el punto de montaje de rutas, sin tocar cada handler individual.
+
+### Pendiente
+
+- Revisar si alguna ruta pública adicional debe mantenerse sin autenticación por diseño.
+
 ## Bugfix: Productos + Sucursales + Cleanup Slice 4 (2026-05-21)
 
 **Asistido por IA** (OpenCode + Engram Memory + Deepseek v4)
