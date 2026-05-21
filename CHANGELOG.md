@@ -1,5 +1,49 @@
 # Changelog
 
+## Bugfix: Productos + Sucursales + Cleanup store.js (2026-05-21)
+
+**Asistido por IA** (OpenCode + Engram Memory + Deepseek v4)
+
+### Resumen
+
+Sesión de bugfixing sobre la rama `melitest`. Se detectaron y corrigieron 3 bugs críticos remanentes de la reestructuración de carpetas y la migración a MongoDB, más la eliminación de código muerto (`store.js`). Se verificó todo con tests manuales contra el servidor corriendo con datos del seed.
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/modules/productos/producto.controller.js` | Fix: `actualizarProducto` devolvía referencia a función → `actualizado`. Fix: `obtenerProductosPorIds` recibía string en vez de array → `$in` iteraba carácter por carácter. |
+| `src/modules/productos/producto.model.js` | Fix: validación `precio` mín 0 → 0.01, inconsistente con el service que rechazaba 0. |
+| `src/modules/productos/producto.service.js` | Cleanup: comentario obsoleto sobre `store.js`. |
+| `src/modules/sucursales/sucursal.service.js` | Fix: `store.pedidos` no definido → `ReferenceError` al desactivar. Reemplazado por `Pedido.findOne()` consultando MongoDB. |
+| `src/modules/pedidos/pedido.model.js` | Cleanup: comentario obsoleto sobre "productos aún no están en MongoDB". |
+| `src/modules/pedidos/pedido.service.js` | Cleanup: comentario obsoleto sobre `store.js`. |
+| `src/shared/store.js` | **Eliminado** — código muerto, cero imports en todo el proyecto. |
+
+**Total: 7 archivos** (6 modificados + 1 eliminado)
+
+### Merge desde meligaleano
+
+- `dd4ee0e → b3efc6b`: Meli restauró lógica perdida en `producto.service.js` (`crear`, `obtenerProductosPorIds`, `actualizar` estaban como stubs vacíos tras la reestructuración de carpetas).
+
+### Logros
+
+- **Bug #1**: `PUT /api/productos/:id` ahora devuelve el producto actualizado en JSON (antes devolvía la referencia a la función `actualizarProducto`).
+- **Bug #2**: `GET /api/productos/:id` ahora busca correctamente por ID (antes `$in` iteraba el string carácter por carácter, nunca encontraba nada).
+- **Bug #3**: `DELETE /api/sucursales/:id` ya no crashea con `ReferenceError: store is not defined`. Ahora consulta `Pedido.findOne()` para validar pedidos activos antes de desactivar.
+- **Validación de precio alineada**: el modelo Mongoose y el service ahora coinciden (precio > 0).
+- **Código muerto eliminado**: `store.js` fuera del proyecto.
+- **Comentarios obsoletos limpiados**: 3 referencias a `store.js` que ya no aplicaban.
+- **Verificación manual**: los 4 bugs fueron testeados contra el servidor con datos del seed, todos pasan.
+
+### Pendiente
+
+- Slice 5: QA Manual — flujo completo de negocio (crear pedido → máquina de estados → desactivar sucursal)
+- Slice 4: Agregar script `npm run seed` standalone (actualmente el seed corre acoplado a `npm start`)
+- Cerrar issues #5 y #6 en GitHub
+
+---
+
 ## Sistema de Usuarios, Roles y Autenticación (2026-05-18)
 
 **Asistido por IA** (Antigravity)

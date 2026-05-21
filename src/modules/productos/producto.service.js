@@ -71,7 +71,7 @@ export async function eliminar(id) {
     throw error;
   }
 
- // Regla de negocio: Validar contra pedidos en store.js (memoria)
+ // Regla de negocio: Validar contra pedidos en MongoDB
   const productoEnUso = await Pedido.findOne({
     'productos.productoId': id,       // Busca dentro del array de productos del pedido
     estado: { $ne: 'entregado' }      // Que el estado NO sea 'entregado'

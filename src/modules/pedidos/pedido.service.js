@@ -14,7 +14,7 @@ export const crear = async (datos) => {
         throw error;
     }
     
-    // 2. Validar que los productos existan (todavía contra store.js)
+    // 2. Validar que los productos existan en MongoDB
     const productoIds = productos.map(p => p.productoId);
     const productosEncontrados = await obtenerProductosPorIds(productoIds);
     if (productosEncontrados.length !== productos.length) {

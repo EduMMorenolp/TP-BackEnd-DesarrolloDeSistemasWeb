@@ -3,8 +3,6 @@ import mongoose from '../../config/db.js';
 // Schema para los items dentro de un pedido.
 const itemPedidoSchema = new mongoose.Schema({
   productoId: {
-    // Los productos aún no están en MongoDB (Slice 2), por lo que usamos String para el UUID.
-    // No se puede usar `ref` sin un ObjectId.
     type: String,
     required: true,
   },
