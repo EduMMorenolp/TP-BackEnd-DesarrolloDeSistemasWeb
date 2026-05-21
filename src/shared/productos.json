@@ -1,0 +1,13 @@
+{
+  "productos": [
+    {
+      "id": "46a1bc23-9163-4cf5-8523-b16d945ec7ab",
+      "nombre": "pan",
+      "descripcion": "cito",
+      "precio": 18,
+      "categoria": "pan",
+      "disponible": true,
+      "fechaCreacion": "2026-05-20T23:51:54.480Z"
+    }
+  ]
+}

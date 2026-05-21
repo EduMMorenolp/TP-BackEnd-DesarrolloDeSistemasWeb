@@ -1,5 +1,5 @@
 import Sucursal from './sucursal.model.js';
-import { store } from '../../shared/store.js';
+import Pedido from '../pedidos/pedido.model.js';
 
 // Crear sucursal
 export async function crear(data) {
@@ -53,11 +53,10 @@ export async function desactivar(id) {
     throw error;
   }
 
-  // Validar que no tenga pedidos activos (estado !== "entregado")
-  // Como pedidos todavia usan store.js, consultamos ahi
-  const tienePedidosActivos = store.pedidos.some(pedido =>
-    pedido.sucursalId === id && pedido.estado !== "entregado"
-  );
+  const tienePedidosActivos = await Pedido.exists({
+    sucursalId: id,
+    estado: { $ne: 'entregado' }
+  });
 
   if (tienePedidosActivos) {
     const error = new Error('No se puede desactivar: la sucursal tiene pedidos activos');
