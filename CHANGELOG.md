@@ -1,12 +1,12 @@
 # Changelog
 
-## Bugfix: Productos + Sucursales + Cleanup store.js (2026-05-21)
+## Bugfix: Productos + Sucursales + Cleanup Slice 4 (2026-05-21)
 
 **Asistido por IA** (OpenCode + Engram Memory + Deepseek v4)
 
 ### Resumen
 
-Sesión de bugfixing sobre la rama `melitest`. Se detectaron y corrigieron 3 bugs críticos remanentes de la reestructuración de carpetas y la migración a MongoDB, más la eliminación de código muerto (`store.js`). Se verificó todo con tests manuales contra el servidor corriendo con datos del seed.
+Sesión de bugfixing y cleanup sobre la rama `melitest`. Se detectaron y corrigieron 3 bugs críticos remanentes de la reestructuración de carpetas y la migración a MongoDB, se eliminó código muerto (`store.js`), y se completó el Slice 4 con seed standalone y script `npm run seed`. Se verificó todo con tests manuales y se cerraron los issues #5, #6, y #7.
 
 ### Archivos modificados
 
@@ -19,8 +19,10 @@ Sesión de bugfixing sobre la rama `melitest`. Se detectaron y corrigieron 3 bug
 | `src/modules/pedidos/pedido.model.js` | Cleanup: comentario obsoleto sobre "productos aún no están en MongoDB". |
 | `src/modules/pedidos/pedido.service.js` | Cleanup: comentario obsoleto sobre `store.js`. |
 | `src/shared/store.js` | **Eliminado** — código muerto, cero imports en todo el proyecto. |
+| `src/config/seed.js` | Feat: ejecutable standalone con guard `isMain`. Importa `connectDB` y `mongoose` para correr sin el server. |
+| `package.json` | Agregado script `npm run seed`. |
 
-**Total: 7 archivos** (6 modificados + 1 eliminado)
+**Total: 9 archivos** (7 modificados + 1 eliminado + 1 creado)
 
 ### Merge desde meligaleano
 
@@ -35,12 +37,18 @@ Sesión de bugfixing sobre la rama `melitest`. Se detectaron y corrigieron 3 bug
 - **Código muerto eliminado**: `store.js` fuera del proyecto.
 - **Comentarios obsoletos limpiados**: 3 referencias a `store.js` que ya no aplicaban.
 - **Verificación manual**: los 4 bugs fueron testeados contra el servidor con datos del seed, todos pasan.
+- **Seed standalone**: `npm run seed` ahora ejecuta el seed de forma independiente (sin levantar el server). El guard `isMain` evita que se duplique cuando corre desde `index.js`.
+- **Issues cerrados**: #5 (Slice 2), #6 (Slice 3), #7 (Slice 4).
+
+### Commits
+
+- `58dfe1c` fix: corregir bugs en productos, sucursales y eliminar store.js muerto
+- `545c016` feat: seed standalone + npm run seed script para Slice 4
 
 ### Pendiente
 
-- Slice 5: QA Manual — flujo completo de negocio (crear pedido → máquina de estados → desactivar sucursal)
-- Slice 4: Agregar script `npm run seed` standalone (actualmente el seed corre acoplado a `npm start`)
-- Cerrar issues #5 y #6 en GitHub
+- Slice 5: QA Manual — flujo completo de negocio ([#8](https://github.com/EduMMorenolp/TP-BackEnd-DesarrolloDeSistemasWeb/issues/8))
+- Slice 6: Documentación + PUG + Revisión Final ([#9](https://github.com/EduMMorenolp/TP-BackEnd-DesarrolloDeSistemasWeb/issues/9))
 
 ---
 
