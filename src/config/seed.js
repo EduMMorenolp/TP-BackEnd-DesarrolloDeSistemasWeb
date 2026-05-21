@@ -1,6 +1,8 @@
 import Usuario from '../modules/usuarios/usuario.model.js';
 import Sucursal from '../modules/sucursales/sucursal.model.js';
 import Producto from '../modules/productos/producto.model.js';
+import mongoose from 'mongoose';
+import { connectDB } from './db.js';
 
 export const seedDatabase = async () => {
   try {
@@ -102,3 +104,16 @@ export const seedDatabase = async () => {
     console.error('❌ Error ejecutando el seeder:', error.message);
   }
 };
+
+// Ejecución standalone: node --env-file=.env src/config/seed.js
+import { fileURLToPath } from 'url';
+
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  await connectDB();
+  await seedDatabase();
+  await mongoose.disconnect();
+  console.log('✅ Seed completado. DB desconectada.');
+  process.exit(0);
+}
