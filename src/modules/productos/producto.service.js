@@ -3,6 +3,9 @@ import Pedido from '../pedidos/pedido.model.js';
 
 // Crear producto
 export async function crear(data) {
+  const producto = new Producto(data);
+  await producto.save();
+  return producto;
 }
 
 // Listar productos
@@ -13,13 +16,48 @@ export async function listar() {
 
 // Buscar producto por un array de IDs
 export async function obtenerProductosPorIds(ids) {
+// ids es un array que viene de pedido.service
+  const productos = await Producto.find({
+    _id: { $in: ids }
+  });  
+
+
+  if (!productos || productos.length === 0) {
+    const err = new Error('Producto no encontrado');
+    err.status = 404;
+    throw err;
+  }
+   return productos;
 }
 
 
 // Actualizar datos
 export async function actualizar(id, data) {
-}
+const { nombre, precio, descripcion, categoria } = data
 
+  // 1. Validaciones manuales (antes de ir a la DB)
+    if (precio !== undefined && (typeof precio !== 'number' || precio <= 0)) {
+    const error = new Error("El campo 'precio' debe ser un numero mayor a 0");
+    error.status = 400;
+    throw error;
+  }
+
+  // 2. Buscamos el producto y actualizamos
+  const productoActualizado = await Producto.findByIdAndUpdate(id, data, { 
+    returnDocument: 'after', 
+    runValidators: true 
+  });
+
+
+// 3. Si el ID no existe en MongoDB
+  if (!productoActualizado) {
+    const error = new Error('Producto no encontrado');
+    error.status = 404;
+    throw error;
+  }
+  return productoActualizado;
+
+ }
 
 
 // Eliminar producto
