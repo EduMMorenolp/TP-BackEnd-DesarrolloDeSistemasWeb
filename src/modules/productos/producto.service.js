@@ -3,6 +3,9 @@ import Pedido from '../pedidos/pedido.model.js';
 
 // Crear producto
 export async function crear(data) {
+  const producto = new Producto(data);
+  await producto.save();
+  return producto;
 }
 
 // Listar productos
@@ -10,15 +13,37 @@ export async function listar() {
   return await Producto.find();
 }
 
-
-// Buscar producto por un array de IDs
+// Buscar producto por un array de IDs (usado por pedidos)
 export async function obtenerProductosPorIds(ids) {
   return await Producto.find({ _id: { $in: ids } });
 }
 
+// Buscar producto por ID (usado por controlador de productos)
+export async function obtenerPorId(id) {
+  const producto = await Producto.findById(id);
+  if (!producto) {
+    const error = new Error('Producto no encontrado');
+    error.status = 404;
+    throw error;
+  }
+  return producto;
+}
 
 // Actualizar datos
 export async function actualizar(id, data) {
+  const producto = await Producto.findByIdAndUpdate(
+    id,
+    { $set: data },
+    { new: true, runValidators: true }
+  );
+
+  if (!producto) {
+    const error = new Error('Producto no encontrado');
+    error.status = 404;
+    throw error;
+  }
+
+  return producto;
 }
 
 

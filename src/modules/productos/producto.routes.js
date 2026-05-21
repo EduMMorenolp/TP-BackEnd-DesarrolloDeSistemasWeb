@@ -7,7 +7,7 @@ router.get('/', productoController.obtenerCatalogo);
 
 router.post('/', productoController.crearProducto);
 
-router.get('/:id', productoController.obtenerProductosPorIds);
+router.get('/:id', productoController.obtenerPorId);
 
 router.put('/:id', productoController.actualizarProducto);
 
