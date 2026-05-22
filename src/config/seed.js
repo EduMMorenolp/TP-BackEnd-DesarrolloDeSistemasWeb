@@ -1,5 +1,8 @@
 import Usuario from '../modules/usuarios/usuario.model.js';
 import Sucursal from '../modules/sucursales/sucursal.model.js';
+import Producto from '../modules/productos/producto.model.js';
+import mongoose from 'mongoose';
+import { connectDB } from './db.js';
 
 export const seedDatabase = async () => {
   try {
@@ -58,7 +61,59 @@ export const seedDatabase = async () => {
       ]);
       console.log('🌱 Usuarios base creados exitosamente \n ADMIN: admin@laespiga.com \n PLANTA: planta@laespiga.com \n SUCURSAL: sucursal@laespiga.com \n FRANQUICIA: franquicia@laespiga.com \n (Contraseña: password123)');
     }
+
+
+
+    //3. Seed Productos
+    const productCount = await Producto.countDocuments();
+    
+    if (productCount === 0) {
+      await Producto.create([
+        {
+          nombre: 'Pan de Campo',
+          descripcion: 'Pan artesanal horneado a leña',
+          precio: 1500,
+          categoria: 'Panadería',
+        },
+        {
+          nombre: 'Factura con Crema',
+          descripcion: 'Deliciosa factura con crema pastelera',
+          precio: 600,
+          categoria: 'Facturería',
+        },
+        {
+          nombre: 'Mignon',
+          descripcion: 'Pan mignon clásico',
+          precio: 2000, // Precio por kilo
+          categoria: 'Panadería',
+        },
+        {
+          nombre: 'Pepas de Membrillo',
+          descripcion: 'Galletitas artesanales con dulce de membrillo',
+          precio: 1200,
+          categoria: 'Pastelería',
+        }
+      ]);
+      console.log('🌱 Productos iniciales creados exitosamente');
+    } else {
+      console.log('ℹ️ Los productos ya existen, saltando seed de productos');
+    }
+
+
   } catch (error) {
     console.error('❌ Error ejecutando el seeder:', error.message);
   }
 };
+
+// Ejecución standalone: node --env-file=.env src/config/seed.js
+import { fileURLToPath } from 'url';
+
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  await connectDB();
+  await seedDatabase();
+  await mongoose.disconnect();
+  console.log('✅ Seed completado. DB desconectada.');
+  process.exit(0);
+}

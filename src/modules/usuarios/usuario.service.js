@@ -18,8 +18,6 @@ export const createUsuario = async (data) => {
 };
 
 export const updateUsuario = async (id, data) => {
-  // Si envían password nuevo, necesitamos usar save() para que corra el hook de pre-save
-  // O podemos hashearla acá. Vamos a usar Mongoose findByIdAndUpdate pero si hay password, lo manejamos.
   if (data.password) {
     const usuario = await Usuario.findById(id);
     if (!usuario) return null;

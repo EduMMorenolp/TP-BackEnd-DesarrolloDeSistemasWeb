@@ -11,6 +11,7 @@ import usuarioRoutes from './modules/usuarios/usuario.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import errorHandler from './shared/errorHandler.js';
 import { seedDatabase } from './config/seed.js';
+import { verifyToken } from './shared/middlewares/auth.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,11 +30,11 @@ app.use(express.json());
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Registrar los 3 routers bajo /api
-app.use('/api/sucursales', sucursalRoutes);
-app.use('/api/productos', productoRoutes);
-app.use('/api/pedidos', pedidoRoutes);
-app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/sucursales', verifyToken,  sucursalRoutes);
+app.use('/api/productos',verifyToken, productoRoutes);
+app.use('/api/pedidos', verifyToken, pedidoRoutes);
+app.use('/api/usuarios', verifyToken, usuarioRoutes);
 
 // Endpoint de health check
 app.get('/api/health', (req, res) => {
