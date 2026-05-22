@@ -1,187 +1,203 @@
 doctype html
 html(lang="es")
-	head
-		meta(charset="UTF-8")
-		meta(name="viewport", content="width=device-width, initial-scale=1.0")
-		title Productos - La Espiga de Oro
-		link(rel="stylesheet", href="/public/styles.css")
-		script(src="/public/auth.js")
-		
-	body
-		header.user-header
-			div.user-info
-				span Hola, 
-				span#userNameDisplay Cargando...
-			nav.nav-right
-				a(href="/sucursales") Sucursales
-				a(href="/productos") Productos
-				a(href="/pedidos") Pedidos
-				a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
-		main
-		
-			.top
-				h1 Productos
-				div
-					a.link-btn(href="/index") Inicio
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Productos - La Espiga de Oro
+        link(rel="stylesheet", href="/public/styles.css")
+        script(src="/public/auth.js")
+        
+    body
+        header.user-header
+            div.user-info
+                span Hola, 
+                span#userNameDisplay Cargando...
+            nav.nav-right
+                a(href="/sucursales") Sucursales
+                a(href="/productos") Productos
+                a(href="/pedidos") Pedidos
+                a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
+        main
+        
+            .top
+                h1 Productos
+                div
+                    a.link-btn(href="/index") Inicio
 
-			section.card
-				h2 Alta rapida
-				p.muted Crea productos desde esta pantalla. Tambien puedes editar o eliminar filas existentes.
-				form#productoForm
-					input(type="text", name="nombre", placeholder="Nombre", required=true)
-					input(type="text", name="descripcion", placeholder="Descripcion")
-					input(type="number", name="precio", placeholder="Precio", step="0.01", min="0.01", required=true)
-					input(type="text", name="categoria", placeholder="Categoria", required=true)
-					button(type="submit") Crear producto
-				p#estadoMsg.muted
+            section.card
+                h2 Alta rapida
+                p.muted Crea productos desde esta pantalla. Tambien puedes editar o eliminar filas existentes.
+                form#productoForm
+                    input(type="text", name="nombre", placeholder="Nombre", required=true)
+                    input(type="text", name="descripcion", placeholder="Descripcion")
+                    input(type="number", name="precio", placeholder="Precio", step="0.01", min="0.01", required=true)
+                    input(type="text", name="categoria", placeholder="Categoria", required=true)
+                    button(type="submit") Crear producto
+                p#estadoMsg.muted
 
-			section.card
-				.top
-					h2 Catalogo
-					button(type="button", onclick="cargarProductos()") Recargar
-				table
-					thead
-						tr
-							th ID
-							th Nombre
-							th Descripcion
-							th Precio
-							th Categoria
-							th Disponible
-							th Acciones
-					tbody#tablaProductos
+            section.card
+                .top
+                    h2 Catalogo
+                    button(type="button", onclick="cargarProductos()") Recargar
+                table
+                    thead
+                        tr
+                            th ID
+                            th Nombre
+                            th Descripcion
+                            th Precio
+                            th Categoria
+                            th Disponible
+                            th Acciones
+                    tbody#tablaProductos
 
-		script.
-			const form = document.getElementById('productoForm');
-			const tabla = document.getElementById('tablaProductos');
-			const estadoMsg = document.getElementById('estadoMsg');
+        script.
+            // Protegemos la vista en general arriba de todo
+            if (!getToken()) {
+                window.location.href = '/login';
+            }
 
-			function setMsg(texto, esError = false) {
-				estadoMsg.textContent = texto;
-				estadoMsg.className = esError ? 'bad' : 'ok';
-			}
+            const form = document.getElementById('productoForm');
+            const tabla = document.getElementById('tablaProductos');
+            const estadoMsg = document.getElementById('estadoMsg');
 
-			function fmtPrecio(value) {
-				const n = Number(value);
-				return Number.isFinite(n) ? n.toFixed(2) : '-';
-			}
+            function setMsg(texto, esError = false) {
+                estadoMsg.textContent = texto;
+                estadoMsg.className = esError ? 'bad' : 'ok';
+            }
 
-			function filaProducto(p) {
-				const tr = document.createElement('tr');
-				tr.innerHTML = `
-					<td>${p.id || '-'}</td>
-					<td>${p.nombre || '-'}</td>
-					<td>${p.descripcion || '-'}</td>
-					<td>${fmtPrecio(p.precio)}</td>
-					<td>${p.categoria || '-'}</td>
-					<td>${p.disponible === false ? 'No' : 'Si'}</td>
-					<td>
-						<div class="actions">
-							<button type="button" data-edit="${p.id}">Editar</button>
-							<button type="button" data-del="${p.id}">Eliminar</button>
-						</div>
-					</td>
-				`;
-				return tr;
-			}
+            // Evitamos que rompa si el backend devuelve un string o error
+            function fmtPrecio(value) {
+                const n = Number(value);
+                return Number.isFinite(n) ? n.toFixed(2) : '-';
+            }
 
-			async function cargarProductos() {
-				tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
-				try {
-					const res = await fetch('/api/productos');
-					const data = await res.json();
-					const items = Array.isArray(data) ? data : [];
-					if (items.length === 0) {
-						tabla.innerHTML = '<tr><td colspan="7">Aún no tenes productos agregados</td></tr>';
-						return;
-					}
-					tabla.innerHTML = '';
-					items.forEach((p) => tabla.appendChild(filaProducto(p)));
-				} catch (err) {
-					tabla.innerHTML = '<tr><td colspan="7">Error al cargar</td></tr>';
-				}
-			}
+            function filaProducto(p) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p._id || '-'}</td>
+                    <td>${p.nombre || '-'}</td>
+                    <td>${p.descripcion || '-'}</td>
+                    <td>${fmtPrecio(p.precio)}</td>
+                    <td>${p.categoria || '-'}</td>
+                    <td>${p.disponible === false ? 'No' : 'Si'}</td>
+                    <td>
+                        <div class="actions">
+                            <button type="button" data-edit="${p._id}">Editar</button>
+                            <button type="button" data-del="${p._id}">Eliminar</button>
+                        </div>
+                    </td>
+                `;
+                return tr;
+            }
 
-			async function crearProducto(payload) {
-				const res = await fetch('/api/productos', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json'
-					'Authorization': `Bearer ${getToken()}` },
-					body: JSON.stringify(payload)
-				});
-				const data = await res.json();
-				if (!res.ok) {
-					throw new Error(data.error || 'Error al crear producto');
-				}
-			}
+            async function cargarProductos() {
+                tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+                try {
+                    const res = await fetch('/api/productos', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    const data = await res.json();
+                    const items = Array.isArray(data) ? data : [];
+                    if (items.length === 0) {
+                        tabla.innerHTML = '<tr><td colspan="7">Aún no tenes productos agregados</td></tr>';
+                        return;
+                    }
+                    tabla.innerHTML = '';
+                    items.forEach((p) => tabla.appendChild(filaProducto(p)));
+                } catch (err) {
+                    tabla.innerHTML = '<tr><td colspan="7">Error al cargar</td></tr>';
+                }
+            }
 
-			async function editarProducto(id) {
-				const nombre = prompt('Nuevo nombre:');
-				if (!nombre) return;
-				const precioRaw = prompt('Nuevo precio (>0):');
-				const precio = Number(precioRaw);
-				if (!Number.isFinite(precio) || precio <= 0) {
-					setMsg('Precio invalido', true);
-					return;
-				}
-				const descripcion = prompt('Nueva descripcion:') || '';
-				const categoria = prompt('Nueva categoria:') || '';
+            async function crearProducto(payload) {
+                const res = await fetch('/api/productos', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Error al crear producto');
+                }
+            }
 
-				const res = await fetch(`/api/productos/${id}`, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ nombre, precio, descripcion, categoria })
-				});
-				const data = await res.json();
-				if (!res.ok) throw new Error(data.error || 'No se pudo actualizar');
-			}
+            async function editarProducto(id) {
+                const nombre = prompt('Nuevo nombre:');
+                if (!nombre) return;
+                const precioRaw = prompt('Nuevo precio (>0):');
+                const precio = Number(precioRaw);
+                if (!Number.isFinite(precio) || precio <= 0) {
+                    setMsg('Precio invalido', true);
+                    return;
+                }
+                const descripcion = prompt('Nueva descripcion:') || '';
+                const categoria = prompt('Nueva categoria:') || '';
 
-			async function eliminarProducto(id) {
-				const ok = confirm('Eliminar producto?');
-				if (!ok) return;
-				const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
-				const data = await res.json();
-				if (!res.ok) throw new Error(data.error || 'No se pudo eliminar');
-			}
+                const res = await fetch(`/api/productos/${id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ nombre, precio, descripcion, categoria })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'No se pudo actualizar');
+            }
 
-			form.addEventListener('submit', async (e) => {
-				e.preventDefault();
-				const fd = new FormData(form);
-				const payload = {
-					nombre: String(fd.get('nombre') || '').trim(),
-					descripcion: String(fd.get('descripcion') || '').trim(),
-					precio: Number(fd.get('precio')),
-					categoria: String(fd.get('categoria') || '').trim()
-				};
-				try {
-					await crearProducto(payload);
-					setMsg('Producto creado correctamente');
-					form.reset();
-					cargarProductos();
-				} catch (err) {
-					setMsg(err.message, true);
-				}
-			});
+            async function eliminarProducto(id) {
+                const ok = confirm('Eliminar producto?');
+                if (!ok) return;
+                const res = await fetch(`/api/productos/${id}`, { 
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'No se pudo eliminar');
+            }
 
-			tabla.addEventListener('click', async (e) => {
-				const boton = e.target.closest('button');
-				if (!boton) return;
-				const idEdit = boton.getAttribute('data-edit');
-				const idDel = boton.getAttribute('data-del');
-				try {
-					if (idEdit) {
-						await editarProducto(idEdit);
-						setMsg('Producto actualizado');
-						await cargarProductos();
-					}
-					if (idDel) {
-						await eliminarProducto(idDel);
-						setMsg('Producto eliminado');
-						await cargarProductos();
-					}
-				} catch (err) {
-					setMsg(err.message, true);
-				}
-			});
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(form);
+                const payload = {
+                    nombre: String(fd.get('nombre') || '').trim(),
+                    descripcion: String(fd.get('descripcion') || '').trim(),
+                    precio: Number(fd.get('precio')),
+                    categoria: String(fd.get('categoria') || '').trim()
+                };
+                try {
+                    await crearProducto(payload);
+                    setMsg('Producto creado correctamente');
+                    form.reset();
+                    cargarProductos();
+                } catch (err) {
+                    setMsg(err.message, true);
+                }
+            });
 
-			cargarProductos();
+            tabla.addEventListener('click', async (e) => {
+                const boton = e.target.closest('button');
+                if (!boton) return;
+                const idEdit = boton.getAttribute('data-edit');
+                const idDel = boton.getAttribute('data-del');
+                try {
+                    if (idEdit) {
+                        await editarProducto(idEdit);
+                        setMsg('Producto actualizado');
+                        await cargarProductos();
+                    }
+                    if (idDel) {
+                        await eliminarProducto(idDel);
+                        setMsg('Producto eliminado');
+                        await cargarProductos();
+                    }
+                } catch (err) {
+                    setMsg(err.message, true);
+                }
+            });
+
+            cargarProductos();

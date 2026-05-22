@@ -23,7 +23,7 @@ function redirectIfNotLoggedIn() {
     }
 }
 
-// Control de rutas (Evita rebotes)
+// Control de rutas 
 const esPantallaLogin = window.location.pathname === '/login';
 
 if (isLoggedIn() && esPantallaLogin) {
