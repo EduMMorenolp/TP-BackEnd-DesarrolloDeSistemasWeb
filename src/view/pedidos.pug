@@ -4,97 +4,19 @@ html(lang="es")
 		meta(charset="UTF-8")
 		meta(name="viewport", content="width=device-width, initial-scale=1.0")
 		title Pedidos - La Espiga de Oro
-		style.
-			:root {
-				--bg: #f6f4ee;
-				--ink: #1e1a14;
-				--card: #fff;
-				--line: #ddd2c3;
-				--brand: #7b3f00;
-				--ok: #0f766e;
-				--bad: #b91c1c;
-			}
-
-			* { box-sizing: border-box; }
-
-			body {
-				margin: 0;
-				background: var(--bg);
-				color: var(--ink);
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-			}
-
-			main {
-				max-width: 1100px;
-				margin: 0 auto;
-				padding: 1rem;
-			}
-
-			.card {
-				background: var(--card);
-				border: 1px solid var(--line);
-				border-radius: 12px;
-				padding: 1rem;
-				margin-bottom: 1rem;
-			}
-
-			.head {
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				gap: .6rem;
-				flex-wrap: wrap;
-			}
-
-			button, .btn {
-				border: 0;
-				border-radius: 8px;
-				padding: .55rem .85rem;
-				font-weight: 700;
-				background: var(--brand);
-				color: #fff;
-				cursor: pointer;
-				text-decoration: none;
-			}
-
-			select, input {
-				width: 100%;
-				padding: .6rem;
-				border: 1px solid #cabfac;
-				border-radius: 8px;
-			}
-
-			.grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-				gap: .7rem;
-			}
-
-			.linea {
-				display: grid;
-				grid-template-columns: 2fr 1fr auto;
-				gap: .5rem;
-				margin-bottom: .5rem;
-			}
-
-			table {
-				width: 100%;
-				border-collapse: collapse;
-			}
-
-			th, td {
-				border-bottom: 1px solid #eee5d8;
-				text-align: left;
-				vertical-align: top;
-				padding: .55rem;
-			}
-
-			.estado-ok { color: var(--ok); }
-			.estado-bad { color: var(--bad); }
-			.mini-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
-			.mini-actions button:nth-child(2) { background: #9a3412; }
-			.mini-actions button:nth-child(3) { background: #b91c1c; }
+		link(rel="stylesheet", href="/public/styles.css")
+		script(src="/public/auth.js")
 	body
+		header.user-header
+			div.user-info
+				span Hola, 
+				span#userNameDisplay Cargando...
+			nav.nav-right
+				a(href="/sucursales") Sucursales
+				a(href="/productos") Productos
+				a(href="/pedidos") Pedidos
+				a.btn-logout(href="#", onclick="logout()") Cerrar Sesión	
+
 		main
 			section.card
 				.head
@@ -213,7 +135,8 @@ html(lang="es")
 
 					const res = await fetch('/api/pedidos', {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+						headers: { 'Content-Type': 'application/json'
+						'Authorization': `Bearer ${getToken()}` },
 						body: JSON.stringify({ sucursalId, productos, observaciones })
 					});
 					const data = await res.json();

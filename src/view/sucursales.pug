@@ -3,87 +3,10 @@ html(lang="es")
 	head
 		meta(charset="UTF-8")
 		meta(name="viewport", content="width=device-width, initial-scale=1.0")
+		
 		title Sucursales - La Espiga de Oro
-		style.
-			:root {
-				--bg: #f8f5ee;
-				--ink: #1d1914;
-				--line: #d8ccb9;
-				--card: #fff;
-				--brand: #7b3f00;
-				--ok: #0f766e;
-				--bad: #b91c1c;
-			}
 
-			* { box-sizing: border-box; }
-
-			body {
-				margin: 0;
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-				color: var(--ink);
-				background: var(--bg);
-			}
-
-			main {
-				max-width: 1050px;
-				margin: 0 auto;
-				padding: 1rem;
-			}
-
-			.card {
-				background: var(--card);
-				border: 1px solid var(--line);
-				border-radius: 12px;
-				padding: 1rem;
-				margin-bottom: 1rem;
-			}
-
-			.head {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				flex-wrap: wrap;
-				gap: .5rem;
-			}
-
-			.grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-				gap: .7rem;
-			}
-
-			input, select {
-				width: 100%;
-				border: 1px solid #cabca7;
-				border-radius: 8px;
-				padding: .62rem;
-			}
-
-			button, .btn {
-				border: 0;
-				border-radius: 8px;
-				padding: .55rem .85rem;
-				background: var(--brand);
-				color: #fff;
-				font-weight: 700;
-				cursor: pointer;
-				text-decoration: none;
-			}
-
-			table {
-				width: 100%;
-				border-collapse: collapse;
-			}
-
-			th, td {
-				border-bottom: 1px solid #ece4d6;
-				text-align: left;
-				padding: .55rem;
-				vertical-align: top;
-			}
-
-			.ok { color: var(--ok); }
-			.bad { color: var(--bad); }
+		link(rel="stylesheet", href="/public/styles.css")	
 	body
 		main
 			section.card

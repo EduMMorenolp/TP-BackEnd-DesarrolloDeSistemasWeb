@@ -4,112 +4,21 @@ html(lang="es")
 		meta(charset="UTF-8")
 		meta(name="viewport", content="width=device-width, initial-scale=1.0")
 		title Productos - La Espiga de Oro
-		style.
-			:root {
-				--bg: #fbf8f1;
-				--ink: #1f1a14;
-				--card: #fff;
-				--line: #dccfb9;
-				--brand: #7b3f00;
-				--ok: #0f766e;
-				--warn: #b45309;
-				--bad: #b91c1c;
-			}
-
-			* { box-sizing: border-box; }
-
-			body {
-				margin: 0;
-				background: linear-gradient(180deg, #fef8eb, var(--bg));
-				color: var(--ink);
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-			}
-
-			main {
-				max-width: 1050px;
-				margin: 0 auto;
-				padding: 1rem;
-			}
-
-			.top {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				flex-wrap: wrap;
-				gap: .5rem;
-			}
-
-			.card {
-				background: var(--card);
-				border: 1px solid var(--line);
-				border-radius: 12px;
-				padding: 1rem;
-				margin-top: 1rem;
-			}
-
-			form {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-				gap: .7rem;
-			}
-
-			input {
-				width: 100%;
-				padding: .6rem;
-				border: 1px solid #c9bfae;
-				border-radius: 8px;
-			}
-
-			button, .link-btn {
-				border: 0;
-				border-radius: 8px;
-				padding: .55rem .8rem;
-				background: var(--brand);
-				color: #fff;
-				font-weight: 700;
-				cursor: pointer;
-			}
-
-			.link-btn {
-				text-decoration: none;
-				display: inline-block;
-			}
-
-			.muted {
-				opacity: .85;
-				font-size: .95rem;
-			}
-
-			table {
-				width: 100%;
-				border-collapse: collapse;
-				margin-top: .6rem;
-			}
-
-			th, td {
-				border-bottom: 1px solid #ece3d6;
-				text-align: left;
-				padding: .55rem;
-				vertical-align: top;
-			}
-
-			.actions {
-				display: flex;
-				gap: .3rem;
-				flex-wrap: wrap;
-			}
-
-			.actions button:nth-child(1) { background: var(--warn); }
-			.actions button:nth-child(2) { background: var(--bad); }
-
-			.ok { color: var(--ok); }
-			.bad { color: var(--bad); }
-
-			@media (max-width: 700px) {
-				th:nth-child(3), td:nth-child(3), th:nth-child(5), td:nth-child(5) { display: none; }
-			}
+		link(rel="stylesheet", href="/public/styles.css")
+		script(src="/public/auth.js")
+		
 	body
+		header.user-header
+			div.user-info
+				span Hola, 
+				span#userNameDisplay Cargando...
+			nav.nav-right
+				a(href="/sucursales") Sucursales
+				a(href="/productos") Productos
+				a(href="/pedidos") Pedidos
+				a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
 		main
+		
 			.top
 				h1 Productos
 				div
@@ -183,7 +92,7 @@ html(lang="es")
 					const data = await res.json();
 					const items = Array.isArray(data) ? data : [];
 					if (items.length === 0) {
-						tabla.innerHTML = '<tr><td colspan="7">No hay productos</td></tr>';
+						tabla.innerHTML = '<tr><td colspan="7">Aún no tenes productos agregados</td></tr>';
 						return;
 					}
 					tabla.innerHTML = '';
@@ -196,7 +105,8 @@ html(lang="es")
 			async function crearProducto(payload) {
 				const res = await fetch('/api/productos', {
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+					headers: { 'Content-Type': 'application/json'
+					'Authorization': `Bearer ${getToken()}` },
 					body: JSON.stringify(payload)
 				});
 				const data = await res.json();
