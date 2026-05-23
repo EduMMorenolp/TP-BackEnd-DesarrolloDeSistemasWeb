@@ -1,0 +1,13 @@
+{
+  "productos": [
+    {
+      "id": "619fc782-20b4-41b2-a309-6572f1e35893",
+      "nombre": "Pan Francés",
+      "descripcion": "Congelado",
+      "precio": 20000,
+      "categoria": "Panificados",
+      "disponible": true,
+      "fechaCreacion": "2026-05-21T23:27:11.201Z"
+    }
+  ]
+}
