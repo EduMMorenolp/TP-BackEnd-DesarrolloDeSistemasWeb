@@ -1,5 +1,27 @@
 # Changelog
 
+## Seguridad: permisos por rol y autorización por propiedad (2026-05-24)
+
+**Asistido por IA**
+
+### Resumen
+
+Se implementó una capa de autorización más fina que complementa la autenticación JWT: un middleware `permit` para permisos por rol y `permitOwnerOr` para autorización por propiedad de recursos (p. ej. que una `FRANQUICIA` solo edite sus sucursales). Estos middlewares se aplicaron en los puntos de montaje de rutas relevantes para evitar exposición accidental de endpoints.
+
+### Archivos modificados/creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/shared/middlewares/permission.middleware.js` | Nuevo middleware `permit` y `permitOwnerOr` para autorización por rol y por propiedad. |
+| `src/modules/productos/producto.routes.js` | Feat: `POST/PUT/DELETE` protegidos con `permit(['PLANTA','FRANQUICIA'])`. |
+| `src/modules/sucursales/sucursal.routes.js` | Feat: `POST` protegido con `permit(['PLANTA','FRANQUICIA'])`; `PUT/DELETE` usan `permitOwnerOr(...)` para autorizar por pertenencia. |
+
+### Notas
+
+- `ADMIN` mantiene bypass implícito en los middlewares.
+- Para soportar productos locales por franquicia, se recomienda añadir `sucursalId` o `scope` a `Producto` (no modificado automáticamente). 
+- Se sugiere añadir comprobaciones duplicadas en los controllers (double-check) para evitar bypass en lógica de negocio.
+
 ## Seguridad: autenticación JWT aplicada a rutas API (2026-05-21)
 
 **Cambio Manual**
