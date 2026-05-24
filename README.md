@@ -135,28 +135,40 @@ npm start
 espiga-de-oro/
 ├── src/
 │   ├── config/
-│   │   └── db.js              # Conexion a MongoDB con Mongoose
-│   ├── sucursales/            # CRUD de sucursales (MongoDB)
-│   │   ├── sucursal.model.js  # Schema de Mongoose
-│   │   ├── sucursal.service.js
-│   │   ├── sucursal.controller.js
-│   │   └── sucursal.routes.js
-│   ├── productos/             # CRUD de productos
-│   │   ├── producto.model.js
-│   │   ├── producto.service.js
-│   │   ├── producto.controller.js
-│   │   └── producto.routes.js
-│   ├── pedidos/               # CRUD de pedidos con populate
-│   │   ├── pedido.model.js
-│   │   ├── pedido.service.js
-│   │   ├── pedido.controller.js
-│   │   └── pedido.routes.js
-│   ├── shared/                # Recursos compartidos
-│   │   ├── store.js           # Persistencia en JSON (prod/pedidos)
-│   │   └── errorHandler.js    # Middleware global de errores
-│   ├── view/                  # Vistas Pug
-│   └── index.js               # Entry point
-├── .env                       # Variables de entorno
+│   │   └── db.js                      # Conexión a MongoDB con Mongoose
+│   ├── modules/                       # Módulos feature-based
+│   │   ├── auth/
+│   │   │   ├── auth.controller.js
+│   │   │   ├── auth.routes.js
+│   │   │   └── auth.service.js
+│   │   ├── productos/
+│   │   │   ├── producto.model.js
+│   │   │   ├── producto.service.js
+│   │   │   ├── producto.controller.js
+│   │   │   └── producto.routes.js
+│   │   ├── sucursales/
+│   │   │   ├── sucursal.model.js
+│   │   │   ├── sucursal.service.js
+│   │   │   ├── sucursal.controller.js
+│   │   │   └── sucursal.routes.js
+│   │   ├── pedidos/
+│   │   │   ├── pedido.model.js
+│   │   │   ├── pedido.service.js
+│   │   │   ├── pedido.controller.js
+│   │   │   └── pedido.routes.js
+│   │   └── usuarios/
+│   │       ├── usuario.model.js
+│   │       ├── usuario.service.js
+│   │       ├── usuario.controller.js
+│   │       └── usuario.routes.js
+│   ├── public/                        # Assets estáticos (CSS, imágenes)
+│   ├── shared/                        # Recursos compartidos (middlewares, helpers)
+│   │   ├── middlewares/
+│   │   │   └── auth.middleware.js
+│   │   └── errorHandler.js
+│   ├── view/                          # Vistas Pug
+│   └── index.js                       # Entry point
+├── .env                               # Variables de entorno
 ├── package.json
 ├── README.md
 └── postman_collection.json
@@ -193,6 +205,28 @@ espiga-de-oro/
 | POST | `/api/pedidos` | Crea nuevo pedido |
 | PATCH | `/api/pedidos/:id/estado` | Cambia estado del pedido |
 | DELETE | `/api/pedidos/:id` | Cancela pedido |
+
+### Autenticación (`/api/auth`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login público: recibe `{ email, password }` y devuelve `{ token }`. |
+| GET | `/api/auth/me` | Devuelve perfil del usuario autenticado (requiere `Authorization: Bearer <token>`). |
+
+### Usuarios
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/usuarios` | Lista todos los usuarios (requiere rol `ADMIN`). |
+| GET | `/api/usuarios/:id` | Obtiene usuario por ID (requiere rol `ADMIN`). |
+| POST | `/api/usuarios` | Crea nuevo usuario. Actualmente está abierto temporalmente para permitir crear el primer `ADMIN` (en producción proteger con `verifyToken` + `checkRole(['ADMIN'])`). |
+| PUT | `/api/usuarios/:id` | Actualiza usuario (requiere rol `ADMIN`). |
+| DELETE | `/api/usuarios/:id` | Elimina usuario (requiere rol `ADMIN`). |
+
+Notas:
+
+- Las contraseñas se almacenan encriptadas con `bcryptjs` (ver `src/modules/usuarios/usuario.model.js`).
+- El seeder crea usuarios base (`ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`) con la contraseña `password123` si la colección está vacía.
 
 ### Health Check
 
