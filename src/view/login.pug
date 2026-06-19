@@ -1,0 +1,59 @@
+doctype html
+html(lang="es")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Login | La Espiga de Oro
+    link(rel="stylesheet", href="/public/styles.css")
+
+  body.login-page
+    .login-container
+      .login-card
+        h1 Bienvenido
+        p.subtitle Accedé a tu cuenta para gestionar tu franquicia o sucursal.
+
+       
+        p#errorMessage.bad.hidden
+
+        form#loginForm
+          .form-group
+            label(for="email") Correo electrónico
+            input#email(type="email" placeholder="usuario@correo.com" required)
+          
+          .form-group
+            label(for="password") Contraseña
+            input#password(type="password" placeholder="********" required)
+
+          
+          button.btn.btn-block(type="submit") Ingresar 
+
+    script.
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            errorMessage.classList.remove('hidden');
+            errorMessage.textContent = data.message || 'Error al iniciar sesión';
+          } else {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('usuario', JSON.stringify(data.usuario));
+            window.location.href = '/index';
+          }
+        } catch (err) {
+          errorMessage.classList.remove('hidden');
+          errorMessage.textContent = 'Error de conexión con el servidor';
+        }
+      });
