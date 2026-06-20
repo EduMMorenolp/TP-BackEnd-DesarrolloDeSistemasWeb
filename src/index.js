@@ -69,6 +69,10 @@ app.get('/productos', function (req, res) {
     res.render('productos');
 });
 
+app.get('/usuarios', function (req, res) {
+    res.render('usuarios');
+});
+
 
 // Middleware global de manejo de errores (siempre al final)
 app.use(errorHandler);

@@ -11,6 +11,11 @@ function getUserInfo() {
     return usuarioTexto ? JSON.parse(usuarioTexto) : null;
 }
 
+function isAdmin() {
+    const user = getUserInfo();
+    return user && user.rol === 'ADMIN';
+}
+
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');

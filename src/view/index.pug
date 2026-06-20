@@ -9,6 +9,12 @@ html(lang="es")
     link(rel="stylesheet", href="/public/styles.css")
 
     script(src="/public/auth.js")
+    script.
+      document.addEventListener('DOMContentLoaded', () => {
+        if (isAdmin()) {
+          document.querySelectorAll('.admin-link, .admin-card').forEach(el => el.style.display = '');
+        }
+      });
     
   body
     header.user-header
@@ -21,6 +27,7 @@ html(lang="es")
         a(href="/sucursales") Sucursales
         a(href="/productos") Productos
         a(href="/pedidos") Pedidos
+        a.admin-link(href="/usuarios", style="display:none") Usuarios
         a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
 
     section.hero
@@ -42,4 +49,9 @@ html(lang="es")
         p Creacion y seguimiento de pedidos con flujo de estados.
         .actions
           a.btn(href="/pedidos") Ver Pedidos
+      article.card.admin-card(style="display:none")
+        h2 Modulo Usuarios
+        p Administracion de usuarios, roles y sucursales.
+        .actions
+          a.btn(href="/usuarios") Ir a Usuarios
     p.foot Desarrollado por Grupo Clouds

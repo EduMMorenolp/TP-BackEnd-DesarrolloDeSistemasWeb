@@ -1,5 +1,32 @@
 # Changelog
 
+## Módulo Usuarios — Admin (2026-06-19)
+
+**Asistido por IA**
+
+### Resumen
+
+Se implementó un nuevo módulo de administración de usuarios visible solo para rol `ADMIN`. Permite listar todos los usuarios, crear nuevos, editar datos y rol, y desactivar/reactivar usuarios. El link de navegación y la card en el dashboard se muestran condicionalmente solo para administradores.
+
+### Archivos modificados/creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/view/usuarios.pug` | Nuevo — Vista completa del módulo: alta de usuario, listado con editar/desactivar/reactivar, y JS embebido conectado a los endpoints existentes. |
+| `src/index.js` | Feat: ruta `GET /usuarios` que renderiza `usuarios.pug`. |
+| `src/public/auth.js` | Feat: nueva función `isAdmin()`. |
+| `src/view/index.pug` | Feat: nav link y card "Módulo Usuarios" visibles solo para ADMIN via JS condicional. |
+| `src/view/sucursales.pug` | Feat: nav link "Usuarios" visible solo para ADMIN. |
+| `src/view/productos.pug` | Feat: nav link "Usuarios" visible solo para ADMIN. |
+| `src/view/pedidos.pug` | Feat: nav link "Usuarios" visible solo para ADMIN. |
+| `src/modules/usuarios/usuario.routes.js` | Fix: `verifyToken` + `checkRole(['ADMIN'])` agregado al `POST /api/usuarios` (estaba público). |
+
+### Notas
+
+- El backend ya existía con CRUD de usuarios protegido por rol ADMIN, solo faltaba la vista.
+- El botón de acción cambia dinámicamente entre "Desactivar" (DELETE → `activo: false`) y "Reactivar" (PUT → `activo: true`).
+- Edición de usuarios mediante prompts secuenciales (mismo patrón que sucursales/productos), incluyendo cambio de rol y reasignación de sucursal.
+
 ## Seguridad: permisos por rol y autorización por propiedad (2026-05-24)
 
 **Asistido por IA**

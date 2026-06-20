@@ -7,7 +7,7 @@ const router = Router();
 router.get('/', checkRole(['ADMIN']), usuarioController.getUsuarios);
 router.get('/:id', checkRole(['ADMIN']), usuarioController.getUsuarioById);
 router.put('/:id', checkRole(['ADMIN']), usuarioController.updateUsuario);
-router.post('/', usuarioController.createUsuario); 
+router.post('/', verifyToken, checkRole(['ADMIN']), usuarioController.createUsuario); 
 router.delete('/:id', checkRole(['ADMIN']), usuarioController.deleteUsuario);
 
 

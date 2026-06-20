@@ -6,6 +6,12 @@ html(lang="es")
         title Pedidos - La Espiga de Oro
         link(rel="stylesheet", href="/public/styles.css")
         script(src="/public/auth.js")
+        script.
+            document.addEventListener('DOMContentLoaded', () => {
+                if (isAdmin()) {
+                    document.querySelectorAll('.admin-link').forEach(el => el.style.display = '');
+                }
+            });
     body
         header.user-header
             div.user-info
@@ -15,6 +21,7 @@ html(lang="es")
                 a(href="/sucursales") Sucursales
                 a(href="/productos") Productos
                 a(href="/pedidos") Pedidos
+                a.admin-link(href="/usuarios", style="display:none") Usuarios
                 a.btn-logout(href="#", onclick="logout()") Cerrar Sesión    
 
         main

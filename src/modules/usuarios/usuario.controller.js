@@ -2,7 +2,7 @@ import * as usuarioService from './usuario.service.js';
 
 export const getUsuarios = async (req, res, next) => {
   try {
-    const usuarios = await usuarioService.getUsuarios({ activo: true });
+    const usuarios = await usuarioService.getUsuarios();
     res.status(200).json(usuarios);
   } catch (error) {
     next(error);
