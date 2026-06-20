@@ -2,8 +2,8 @@ import Sucursal from './sucursal.model.js';
 import Pedido from '../pedidos/pedido.model.js';
 
 // Crear sucursal
-export async function crear(data) {
-  const sucursal = new Sucursal(data);
+export async function crear(data, userId) {
+  const sucursal = new Sucursal({ ...data, createdBy: userId });
   await sucursal.save();
   return sucursal;
 }
@@ -27,10 +27,10 @@ export async function obtenerPorId(id) {
 }
 
 // Actualizar datos
-export async function actualizar(id, data) {
+export async function actualizar(id, data, userId) {
   const sucursal = await Sucursal.findByIdAndUpdate(
     id,
-    { $set: data },
+    { $set: { ...data, updatedBy: userId } },
     { new: true, runValidators: true }
   );
 
@@ -44,7 +44,7 @@ export async function actualizar(id, data) {
 }
 
 // Desactivar sucursal
-export async function desactivar(id) {
+export async function desactivar(id, userId) {
   const sucursal = await Sucursal.findById(id);
 
   if (!sucursal) {
@@ -66,6 +66,27 @@ export async function desactivar(id) {
   }
 
   sucursal.activa = false;
+  sucursal.deactivatedBy = userId;
+  sucursal.deactivatedAt = new Date();
+  await sucursal.save();
+
+  return sucursal;
+}
+
+// Activar sucursal (revertir soft delete)
+export async function activar(id, userId) {
+  const sucursal = await Sucursal.findById(id);
+
+  if (!sucursal) {
+    const error = new Error('Sucursal no encontrada');
+    error.status = 404;
+    throw error;
+  }
+
+  sucursal.activa = true;
+  sucursal.deactivatedBy = null;
+  sucursal.deactivatedAt = null;
+  sucursal.updatedBy = userId;
   await sucursal.save();
 
   return sucursal;
@@ -75,4 +96,37 @@ export async function desactivar(id) {
 export async function esSucursalActiva(id) {
   const sucursal = await Sucursal.findById(id);
   return sucursal ? sucursal.activa : false;
+}
+
+// Trazabilidad completa: auditoría + pedidos asociados
+export async function obtenerTrazabilidad(id) {
+  const sucursal = await Sucursal.findById(id)
+    .populate('createdBy', 'nombre email')
+    .populate('updatedBy', 'nombre email')
+    .populate('deactivatedBy', 'nombre email');
+
+  if (!sucursal) {
+    const error = new Error('Sucursal no encontrada');
+    error.status = 404;
+    throw error;
+  }
+
+  const [totalPedidos, pedidosActivos, ultimosPedidos] = await Promise.all([
+    Pedido.countDocuments({ sucursalId: id }),
+    Pedido.countDocuments({ sucursalId: id, estado: { $ne: 'entregado' } }),
+    Pedido.find({ sucursalId: id })
+      .sort({ fechaPedido: -1 })
+      .limit(5)
+      .select('estado fechaPedido observaciones')
+      .lean()
+  ]);
+
+  return {
+    ...sucursal.toJSON(),
+    pedidos: {
+      total: totalPedidos,
+      activos: pedidosActivos,
+      ultimos: ultimosPedidos
+    }
+  };
 }

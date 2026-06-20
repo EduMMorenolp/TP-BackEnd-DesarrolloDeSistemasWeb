@@ -5,6 +5,8 @@ import { permit, permitOwnerOr } from '../../shared/middlewares/permission.middl
 
 router.get('/', controller.listar);
 
+router.get('/:id/trazabilidad', controller.trazabilidad);
+
 router.get('/:id', controller.obtenerPorId);
 
 // Creación: PLANTA o FRANQUICIA (ADMIN implícito via middleware global)
@@ -14,5 +16,8 @@ router.post('/', permit(['PLANTA','FRANQUICIA']), controller.crear);
 router.put('/:id', permitOwnerOr(['PLANTA','FRANQUICIA'], 'Sucursal', 'id', 'sucursalId'), controller.actualizar);
 
 router.delete('/:id', permitOwnerOr(['PLANTA','FRANQUICIA'], 'Sucursal', 'id', 'sucursalId'), controller.desactivar);
+
+// Reactivar sucursal desactivada (soft delete revert)
+router.patch('/:id/activar', permitOwnerOr(['PLANTA','FRANQUICIA'], 'Sucursal', 'id', 'sucursalId'), controller.activar);
 
 export default router;

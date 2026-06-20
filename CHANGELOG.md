@@ -1,5 +1,41 @@
 # Changelog
 
+## Trazabilidad de sucursales + restauración endpoint activar (2026-06-20)
+
+**Asistido por IA** (OpenCode + Engram Memory)
+
+### Resumen
+
+Feature de trazabilidad de sucursales: campos de auditoría (`createdBy`, `updatedBy`, `deactivatedBy`, `deactivatedAt`) en el modelo, nuevo endpoint `GET /api/sucursales/:id/trazabilidad` con populate de usuario y resumen de pedidos, y panel de trazabilidad en `sucursales.pug`. Además se restauró el endpoint `PATCH /api/sucursales/:id/activar` (con su botón condicional en el Pug) que se había perdido porque el commit `509f843` nunca se pusheó a `origin/pre-main` — solo existía en `pre-main` local. La versión restaurada mejora la original: limpia `deactivatedBy`/`deactivatedAt` al reactivar, setea `updatedBy`, y aplica `permitOwnerOr` para autorización por propiedad.
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/modules/sucursales/sucursal.model.js` | Feat: campos de trazabilidad `createdBy`, `updatedBy`, `deactivatedBy` (ref Usuario) + `deactivatedAt` (Date). |
+| `src/modules/sucursales/sucursal.service.js` | Feat: `crear()` setea `createdBy`; `actualizar()` setea `updatedBy`; `desactivar()` setea `deactivatedBy`/`deactivatedAt`. Feat: `obtenerTrazabilidad(id)` con populate de usuario y resumen de pedidos (total, activos, últimos 5). Feat: `activar(id, userId)` reactiva sucursal, limpia campos de desactivación y setea `updatedBy`. |
+| `src/modules/sucursales/sucursal.controller.js` | Feat: handler `trazabilidad(req, res, next)`. Feat: handler `activar(req, res, next)`. |
+| `src/modules/sucursales/sucursal.routes.js` | Feat: `GET /:id/trazabilidad`. Feat: `PATCH /:id/activar` con `permitOwnerOr(['PLANTA','FRANQUICIA'], ...)`. |
+| `src/view/sucursales.pug` | Feat: panel de trazabilidad con grid de auditoría + pedidos. Feat: botón "📋 Trazabilidad" por fila. Feat: botón condicional "Activar"/"Desactivar" según `s.activa`. Handler `data-on` para `PATCH /activar`. |
+| `src/public/styles.css` | Feat: estilos `.btn-trace`, `.trazabilidad-grid` (grid 2 columnas), `#trazabilidadCard`. |
+
+**Total: 6 archivos modificados**
+
+### Logros
+
+- Auditoría completa: cada sucursal registra quién la creó, modificó y desactivó, y cuándo.
+- Endpoint de trazabilidad con populate de usuario + agregación de pedidos en una sola query.
+- Restaurado el endpoint `PATCH /activar` que se había perdido (commit `509f843` nunca pusheado a `origin/pre-main`).
+- El botón de acción cambia dinámicamente entre "Activar" y "Desactivar" según el estado de la sucursal.
+- La versión restaurada de `activar` mejora la original: limpia `deactivatedBy`/`deactivatedAt` y aplica `permitOwnerOr`.
+
+### Notas
+
+- El commit `509f843` (2026-05-13) quedó solo en `pre-main` local sin pushear a `origin/pre-main`, por eso no estaba disponible al crear la rama `trazabilidad-sucursales` desde `origin/pre-main`. Como `origin/pre-main` y `origin/main` apuntaban al mismo commit (`822dc52`), la rama nació sin el endpoint activar.
+- Se decidió NO pushear `509f843` a `origin/pre-main` retroactivamente: el código ya está restaurado y mejorado en esta rama.
+
+---
+
 ## Módulo Usuarios — Admin (2026-06-19)
 
 **Asistido por IA**

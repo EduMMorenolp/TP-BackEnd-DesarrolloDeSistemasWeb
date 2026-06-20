@@ -58,14 +58,79 @@ html(lang="es")
                             th Acciones
                     tbody#tabla
 
+            section.card#trazabilidadCard(style="display:none")
+                .head
+                    h2 Trazabilidad
+                    button(type="button", onclick="cerrarTrazabilidad()") ✕ Cerrar
+                #trazabilidadContent
+
         script.
             const form = document.getElementById('formSucursal');
             const tabla = document.getElementById('tabla');
             const msg = document.getElementById('msg');
+            const trazCard = document.getElementById('trazabilidadCard');
+            const trazContent = document.getElementById('trazabilidadContent');
 
             function setMsg(texto, ok = true) {
                 msg.textContent = texto;
                 msg.className = ok ? 'ok' : 'bad';
+            }
+
+            function cerrarTrazabilidad() {
+                trazCard.style.display = 'none';
+            }
+
+            function formatearFecha(fecha) {
+                if (!fecha) return '-';
+                return new Date(fecha).toLocaleString('es-AR');
+            }
+
+            function estadoLabel(e) {
+                const map = {
+                    pendiente: '⏳ Pendiente',
+                    en_produccion: '🏭 En producción',
+                    despachado: '🚚 Despachado',
+                    entregado: '✅ Entregado'
+                };
+                return map[e] || e;
+            }
+
+            function mostrarTrazabilidad(data) {
+                const s = data;
+                const p = data.pedidos || {};
+
+                let html = '<div class="trazabilidad-grid">';
+
+                // Columna 1 — Auditoría
+                html += '<div><h3>🔍 Auditoría</h3><table><tbody>';
+                html += `<tr><td><strong>Creado por</strong></td><td>${s.createdBy ? s.createdBy.nombre + ' (' + s.createdBy.email + ')' : '— (anterior a trazabilidad)'}</td></tr>`;
+                html += `<tr><td><strong>Última modificación</strong></td><td>${s.updatedBy ? s.updatedBy.nombre + ' (' + s.updatedBy.email + ')' : '—'}</td></tr>`;
+                html += `<tr><td><strong>Desactivado por</strong></td><td>${s.deactivatedBy ? s.deactivatedBy.nombre + ' (' + s.deactivatedBy.email + ')' : '—'}</td></tr>`;
+                html += `<tr><td><strong>Fecha desactivación</strong></td><td>${s.deactivatedAt ? formatearFecha(s.deactivatedAt) : '—'}</td></tr>`;
+                html += '</tbody></table></div>';
+
+                // Columna 2 — Pedidos
+                html += '<div><h3>📦 Pedidos asociados</h3>';
+                html += `<p><strong>Total:</strong> ${p.total} &nbsp;|&nbsp; <strong>Activos:</strong> ${p.activos}</p>`;
+
+                if (p.ultimos && p.ultimos.length > 0) {
+                    html += '<table><thead><tr><th>Estado</th><th>Fecha</th><th>Obs.</th></tr></thead><tbody>';
+                    p.ultimos.forEach(ped => {
+                        html += `<tr>
+                            <td>${estadoLabel(ped.estado)}</td>
+                            <td>${formatearFecha(ped.fechaPedido)}</td>
+                            <td>${ped.observaciones || '—'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p><em>Sin pedidos registrados</em></p>';
+                }
+                html += '</div></div>';
+
+                trazContent.innerHTML = html;
+                trazCard.style.display = '';
+                trazCard.scrollIntoView({ behavior: 'smooth' });
             }
 
             function fila(s) {
@@ -79,7 +144,10 @@ html(lang="es")
                     <td>${s.fechaCreacion || '-'}</td>
                     <td>
                         <button type="button" data-edit="${s._id}">Editar</button>
-                        <button type="button" data-off="${s._id}">Desactivar</button>
+                        ${s.activa === false
+                            ? `<button type="button" data-on="${s._id}">Activar</button>`
+                            : `<button type="button" data-off="${s._id}">Desactivar</button>`}
+                        <button type="button" data-trace="${s._id}" class="btn-trace">📋 Trazabilidad</button>
                     </td>
                 `;
                 return tr;
@@ -136,6 +204,8 @@ html(lang="es")
                 if (!btn) return;
                 const idEdit = btn.getAttribute('data-edit');
                 const idOff = btn.getAttribute('data-off');
+                const idOn = btn.getAttribute('data-on');
+                const idTrace = btn.getAttribute('data-trace');
                 try {
                     if (idEdit) {
                         const nombre = prompt('Nuevo nombre:');
@@ -166,6 +236,29 @@ html(lang="es")
                         if (!res.ok) throw new Error(data.error || 'No se pudo desactivar');
                         setMsg('Sucursal desactivada');
                         await cargarSucursales();
+                    }
+                    if (idOn) {
+                        const ok = confirm('Reactivar sucursal?');
+                        if (!ok) return;
+                        const res = await fetch(`/api/sucursales/${idOn}/activar`, { 
+                            method: 'PATCH',
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo reactivar');
+                        setMsg('Sucursal reactivada');
+                        await cargarSucursales();
+                    }
+                    if (idTrace) {
+                        trazContent.innerHTML = '<p>Cargando trazabilidad...</p>';
+                        trazCard.style.display = '';
+                        trazCard.scrollIntoView({ behavior: 'smooth' });
+                        const res = await fetch(`/api/sucursales/${idTrace}/trazabilidad`, {
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo cargar trazabilidad');
+                        mostrarTrazabilidad(data);
                     }
                 } catch (err) {
                     setMsg(err.message, false);
