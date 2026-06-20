@@ -9,8 +9,13 @@ export async function crear(data, userId) {
 }
 
 // Listar sucursales
-export async function listar() {
-  return await Sucursal.find();
+// ADMIN y PLANTA ven todas. FRANQUICIA y SUCURSAL ven solo la suya
+// (activa o desactivada, para permitir reactivar).
+export async function listar(user) {
+  if (user && (user.rol === 'ADMIN' || user.rol === 'PLANTA')) {
+    return await Sucursal.find();
+  }
+  return await Sucursal.find({ _id: user.sucursalId });
 }
 
 // Buscar sucursal por ID
@@ -27,10 +32,18 @@ export async function obtenerPorId(id) {
 }
 
 // Actualizar datos
-export async function actualizar(id, data, userId) {
+// rol: solo PLANTA/ADMIN pueden cambiar el campo 'tipo' (defensa en profundidad:
+// un franquiciado no podría auto-ascenderse de 'franquicia' a 'sucursal').
+export async function actualizar(id, data, userId, rol) {
+  const datosActualizables = { ...data, updatedBy: userId };
+
+  if (rol !== 'PLANTA' && rol !== 'ADMIN') {
+    delete datosActualizables.tipo;
+  }
+
   const sucursal = await Sucursal.findByIdAndUpdate(
     id,
-    { $set: { ...data, updatedBy: userId } },
+    { $set: datosActualizables },
     { new: true, runValidators: true }
   );
 

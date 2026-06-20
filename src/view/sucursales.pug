@@ -12,6 +12,10 @@ html(lang="es")
                 if (isAdmin()) {
                     document.querySelectorAll('.admin-link').forEach(el => el.style.display = '');
                 }
+                if (!canManageSucursales()) {
+                    const altaCard = document.getElementById('altaSucursalCard');
+                    if (altaCard) altaCard.style.display = 'none';
+                }
             });
         
         
@@ -31,7 +35,7 @@ html(lang="es")
                 .head
                     h1 Sucursales y Franquicias
                     a.btn(href="/index") Inicio
-            section.card
+            section.card#altaSucursalCard
                 h2 Alta de sucursal
                 form#formSucursal.grid
                     input(type="text", name="nombre", placeholder="Nombre", required=true)
@@ -103,8 +107,8 @@ html(lang="es")
 
                 // Columna 1 — Auditoría
                 html += '<div><h3>🔍 Auditoría</h3><table><tbody>';
-                html += `<tr><td><strong>Creado por</strong></td><td>${s.createdBy ? s.createdBy.nombre + ' (' + s.createdBy.email + ')' : '— (anterior a trazabilidad)'}</td></tr>`;
-                html += `<tr><td><strong>Última modificación</strong></td><td>${s.updatedBy ? s.updatedBy.nombre + ' (' + s.updatedBy.email + ')' : '—'}</td></tr>`;
+                html += `<tr><td><strong>Creado por</strong></td><td>${s.createdBy ? s.createdBy.nombre + ' (' + s.createdBy.email + ')' : '— (anterior a trazabilidad)'}${s.fechaCreacion ? ' <br><small>' + formatearFecha(s.fechaCreacion) + '</small>' : ''}</td></tr>`;
+                html += `<tr><td><strong>Última modificación</strong></td><td>${s.updatedBy ? s.updatedBy.nombre + ' (' + s.updatedBy.email + ')' : '—'}${s.fechaActualizacion ? ' <br><small>' + formatearFecha(s.fechaActualizacion) + '</small>' : ''}</td></tr>`;
                 html += `<tr><td><strong>Desactivado por</strong></td><td>${s.deactivatedBy ? s.deactivatedBy.nombre + ' (' + s.deactivatedBy.email + ')' : '—'}</td></tr>`;
                 html += `<tr><td><strong>Fecha desactivación</strong></td><td>${s.deactivatedAt ? formatearFecha(s.deactivatedAt) : '—'}</td></tr>`;
                 html += '</tbody></table></div>';
@@ -135,6 +139,16 @@ html(lang="es")
 
             function fila(s) {
                 const tr = document.createElement('tr');
+                const rol = getUserRole();
+                const puedeAcciones = rol === 'ADMIN' || rol === 'PLANTA' || rol === 'FRANQUICIA';
+                let acciones = '';
+                if (puedeAcciones) {
+                    acciones += `<button type="button" data-edit="${s._id}">Editar</button>`;
+                    acciones += s.activa === false
+                        ? `<button type="button" data-on="${s._id}">Activar</button>`
+                        : `<button type="button" data-off="${s._id}">Desactivar</button>`;
+                }
+                acciones += `<button type="button" data-trace="${s._id}" class="btn-trace">📋 Trazabilidad</button>`;
                 tr.innerHTML = `
                     <td>${s._id || '-'}</td>
                     <td>${s.nombre || '-'}</td>
@@ -142,13 +156,7 @@ html(lang="es")
                     <td>${s.direccion || '-'}</td>
                     <td>${s.activa === false ? 'No' : 'Si'}</td>
                     <td>${s.fechaCreacion || '-'}</td>
-                    <td>
-                        <button type="button" data-edit="${s._id}">Editar</button>
-                        ${s.activa === false
-                            ? `<button type="button" data-on="${s._id}">Activar</button>`
-                            : `<button type="button" data-off="${s._id}">Desactivar</button>`}
-                        <button type="button" data-trace="${s._id}" class="btn-trace">📋 Trazabilidad</button>
-                    </td>
+                    <td>${acciones}</td>
                 `;
                 return tr;
             }

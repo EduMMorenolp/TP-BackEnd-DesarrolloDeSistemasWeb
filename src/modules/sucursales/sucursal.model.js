@@ -21,10 +21,6 @@ const sucursalSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  fechaCreacion: {
-    type: Date,
-    default: Date.now
-  },
   // --- Trazabilidad ---
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -40,6 +36,13 @@ const sucursalSchema = new mongoose.Schema({
   },
   deactivatedAt: {
     type: Date
+  }
+}, {
+  // Mongoose maneja fechaCreacion y fechaActualizacion automaticamente.
+  // Mapeamos a nombres en español del dominio (mismo patron que pedido.model.js).
+  timestamps: {
+    createdAt: 'fechaCreacion',
+    updatedAt: 'fechaActualizacion'
   }
 });
 

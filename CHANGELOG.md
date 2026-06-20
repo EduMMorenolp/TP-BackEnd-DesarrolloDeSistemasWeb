@@ -1,5 +1,69 @@
 # Changelog
 
+## Seguridad + UX por rol en Sucursales y Productos (2026-06-20)
+
+**Asistido por IA** (OpenCode + Engram Memory)
+
+### Resumen
+
+Cuatro mejoras de seguridad y UX sobre el módulo Sucursales, alineando la app con el modelo de negocio: PLANTA administra todo, FRANQUICIA solo su local, SUCURSAL es read-only. Se corrigió un bug de seguridad crítico en `permitOwnerOr` (los roles listados pasaban directo sin verificar propiedad), se unificaron los timestamps de Sucursal con el patrón de Pedido, se filtró el listado por propiedad, y se bloqueó el CRUD de productos para FRANQUICIA/SUCURSAL.
+
+### Cambios
+
+#### 1. Fix de seguridad: `permitOwnerOr` verificaba propiedad decorativamente
+
+**Bug crítico**: el middleware `permitOwnerOr(['PLANTA','FRANQUICIA'], ...)` pasaba a cualquier rol listado **sin verificar propiedad**. La verificación de "owner" era código muerto — una FRANQUICIA podía editar/desactivar TODAS las sucursales del sistema, contradiciendo el CHANGELOG del 2026-05-24.
+
+**Fix**: rediseño de la firma para separar `globalRoles` (pasan sin verificar, ej PLANTA) de `ownerRoles` (verifican propiedad, ej FRANQUICIA). SUCURSAL recibe 403.
+
+#### 2. Timestamps unificados en Sucursal
+
+`fechaCreacion` manual eliminado. Ahora usa `timestamps: { createdAt: 'fechaCreacion', updatedAt: 'fechaActualizacion' }` — mismo patrón que `pedido.model.js`. El Pug sigue leyendo `s.fechaCreacion` sin cambios. Panel de trazabilidad enriquecido: ahora muestra fecha de creación y de última modificación junto a `createdBy`/`updatedBy`.
+
+#### 3. Listado de sucursales filtrado por propiedad
+
+`listar()` ahora recibe `req.user`: ADMIN/PLANTA ven todas, FRANQUICIA y SUCURSAL ven solo la suya (activa o desactivada, para permitir reactivar). Frontend oculta la card "Alta de sucursal" y los botones de acción para roles no-administradores.
+
+#### 4. Productos: CRUD solo PLANTA
+
+POST/PUT/DELETE de productos ahora `permit(['PLANTA'])` (antes permitía FRANQUICIA). Frontend oculta el form "Alta rápida" y los botones Editar/Eliminar para FRANQUICIA y SUCURSAL. El catálogo (GET) sigue visible para todos porque lo usan para armar pedidos.
+
+### Matriz de permisos resultante
+
+| Acción | ADMIN | PLANTA | FRANQUICIA | SUCURSAL |
+|--------|:-----:|:------:|:----------:|:--------:|
+| Crear sucursal | ✅ | ✅ | ❌ | ❌ |
+| Editar/desactivar cualquier sucursal | ✅ | ✅ | ❌ | ❌ |
+| Editar/desactivar la suya | ✅ | ✅ | ✅ | ❌ |
+| Ver todas las sucursales | ✅ | ✅ | ❌ solo la suya | ❌ solo la suya |
+| Crear/editar/eliminar productos | ✅ | ✅ | ❌ | ❌ |
+| Ver catálogo de productos | ✅ | ✅ | ✅ | ✅ |
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/shared/middlewares/permission.middleware.js` | Fix: `permitOwnerOr` rediseñado con `globalRoles`/`ownerRoles`. JSDoc actualizado. |
+| `src/modules/sucursales/sucursal.routes.js` | `POST` solo PLANTA. `PUT`/`DELETE`/`PATCH` con `permitOwnerOr(['PLANTA'],['FRANQUICIA'],...)`. |
+| `src/modules/sucursales/sucursal.controller.js` | `actualizar` pasa `req.user.rol` al service. `listar` pasa `req.user`. |
+| `src/modules/sucursales/sucursal.service.js` | `actualizar` filtra `tipo` para no-PLANTA/no-ADMIN. `listar(user)` filtra por propiedad. |
+| `src/modules/sucursales/sucursal.model.js` | `fechaCreacion` manual → `timestamps` mapeado a español. |
+| `src/modules/productos/producto.routes.js` | `POST`/`PUT`/`DELETE` con `permit(['PLANTA'])`. |
+| `src/public/auth.js` | Nuevas helpers `getUserRole()`, `canManageSucursales()`, `canManageProductos()`. |
+| `src/view/sucursales.pug` | Card alta con id, oculta por rol. `fila()` renderiza botones según rol. Trazabilidad muestra fechas. |
+| `src/view/productos.pug` | Card alta con id, oculta por rol. `filaProducto()` muestra — en Acciones para no-admins. |
+
+**Total: 9 archivos modificados**
+
+### Decisiones de diseño
+
+- **Franquiciado = 1 local**: `Usuario.sucursalId` sigue siendo `ObjectId` único. Si un dueño abre otro local, se crea otro usuario dedicado. Mantiene trazabilidad limpia y no rompe el modelo.
+- **Soft delete sin ocultar desactivadas**: el filtro del listado es por **propiedad**, no por estado. Las desactivadas siguen visibles para permitir reactivarlas.
+- **Defensa en profundidad sobre `tipo`**: el service elimina `tipo` del payload si el rol no es PLANTA/ADMIN, previniendo auto-ascenso de franquicia a sucursal.
+- **`canManageSucursales()` y `canManageProductos()` separados** aunque devuelvan el mismo conjunto (ADMIN/PLANTA), por semántica de dominio — si mañana cambia quién administra productos, se cambia un solo lugar.
+
+---
+
 ## Trazabilidad de sucursales + restauración endpoint activar (2026-06-20)
 
 **Asistido por IA** (OpenCode + Engram Memory)
