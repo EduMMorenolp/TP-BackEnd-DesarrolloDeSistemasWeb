@@ -51,3 +51,12 @@ export const cancelar = async (req, res, next) => {
         next(error);
     }
 };
+
+export const obtenerTrazabilidad = async (req, res, next) => {
+    try {
+        const trazabilidad = await pedidoService.obtenerTrazabilidad(req.params.id);
+        res.status(200).json(trazabilidad);
+    } catch (error) {
+        next(error);
+    }
+};

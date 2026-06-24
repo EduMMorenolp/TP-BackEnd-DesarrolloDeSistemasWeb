@@ -145,3 +145,23 @@ export const cancelar = async (id) => {
     await Pedido.findByIdAndDelete(id);
     return { message: 'Pedido cancelado exitosamente' };
 };
+
+export const obtenerTrazabilidad = async (id) => {
+    const pedido = await Pedido.findById(id)
+        .populate('sucursalId', 'nombre tipo')
+        .populate('creadoPor', 'nombre email') // Popula el usuario que creó el pedido.
+        .populate('historialEstados.usuarioId', 'nombre email'); // Popula el usuario para cada entrada del historial.
+
+    if (!pedido) {
+        const error = new Error(`Pedido con id '${id}' no encontrado`);
+        error.status = 404;
+        throw error;
+    }
+
+    // Transformamos para mantener la compatibilidad con el frontend.
+    const pedidoObj = pedido.toObject({ virtuals: true });
+    pedidoObj.sucursal = pedidoObj.sucursalId;
+    delete pedidoObj.sucursalId;
+
+    return pedidoObj;
+};
