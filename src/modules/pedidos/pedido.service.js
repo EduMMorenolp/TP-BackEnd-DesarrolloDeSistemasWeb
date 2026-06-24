@@ -2,7 +2,7 @@ import Pedido from './pedido.model.js';
 import { esSucursalActiva } from '../sucursales/sucursal.service.js';
 import { obtenerProductosPorIds } from '../productos/producto.service.js';
 
-export const crear = async (datos) => {
+export const crear = async (datos, usuarioId) => {
     const { sucursalId, productos, observaciones } = datos;
 
     // Las validaciones de presencia para sucursalId y productos ahora las maneja el Schema de Mongoose.
@@ -35,12 +35,26 @@ export const crear = async (datos) => {
         };
     });
     
+    // 4. Calcular el precio total del pedido
+    const precioTotal = productosParaGuardar.reduce((total, item) => {
+        return total + (item.precio * item.cantidad);
+    }, 0);
+
     // 4. Crear y guardar el pedido en MongoDB
     const nuevoPedido = new Pedido({
         sucursalId,
         productos: productosParaGuardar,
-        observaciones
+        observaciones,
+        precioTotal,
+        creadoPor: usuarioId,
+        // Inicializamos el historial de estados con el primer estado.
+        historialEstados: [{
+            estado: 'pendiente', // Estado inicial por defecto
+            usuarioId: usuarioId,
+            fecha: new Date(),
+        }],
     });
+    // El estado principal también se establece por defecto a 'pendiente' en el modelo.
     
     await nuevoPedido.save();
     return nuevoPedido;
@@ -81,7 +95,7 @@ export const obtenerPorId = async (id) => {
     return pedidoObj;
 };
 
-export const cambiarEstado = async (id, nuevoEstado) => {
+export const cambiarEstado = async (id, nuevoEstado, usuarioId) => {
     const pedido = await Pedido.findById(id);
     if (!pedido) {
         const error = new Error(`Pedido con id '${id}' no encontrado`);
@@ -103,6 +117,12 @@ export const cambiarEstado = async (id, nuevoEstado) => {
     }
     
     pedido.estado = nuevoEstado;
+    // Añadimos la nueva entrada al historial de estados para trazabilidad.
+    pedido.historialEstados.push({
+        estado: nuevoEstado,
+        usuarioId: usuarioId,
+        fecha: new Date(),
+    });
     await pedido.save();
     return pedido;
 };
