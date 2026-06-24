@@ -60,6 +60,12 @@ html(lang="es")
                             th Fecha
                             th Acciones
                     tbody#tablaPedidos
+            
+            section.card#trazabilidadPedidosCard(style="display:none")
+                .head
+                    h2 Trazabilidad de Pedido
+                    button(type="button", onclick="cerrarTrazabilidad()") ✕ Cerrar
+                #trazabilidadPedidosContent
 
         script.
             let cacheProductos = [];
@@ -209,6 +215,7 @@ html(lang="es")
                     <td>${p.fechaActualizacion || p.fechaPedido || '-'}</td>
                     <td>
                         <div class="mini-actions">
+                            <button type="button" data-next="${p._id}">Avanzar estado</button>
                             <button type="button" data-trace="${p._id}" class="btn-trace">📋 Trazabilidad</button>
                             <button type="button" data-cancel="${p._id}">Cancelar</button>
                         </div>
@@ -232,7 +239,7 @@ html(lang="es")
                     tabla.innerHTML = '';
                     pedidos.forEach((p) => tabla.appendChild(filaPedido(p)));
                 } catch {
-                    tabla.innerHTML = '<tr><td colspan="6">Error de carga</td></tr>';
+                    tabla.innerHTML = '<tr><td colspan="7">Error de carga</td></tr>';
                 }
             }
 
@@ -311,6 +318,7 @@ html(lang="es")
             tabla.addEventListener('click', async (e) => {
                 const btn = e.target.closest('button');
                 if (!btn) return;
+                const idNext = btn.getAttribute('data-next');
                 const idCancel = btn.getAttribute('data-cancel');
                 const idTrace = btn.getAttribute('data-trace');
                 try {

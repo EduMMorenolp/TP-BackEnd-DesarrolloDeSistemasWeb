@@ -1,4 +1,4 @@
-ddimport mongoose from '../../config/db.js';
+import mongoose from '../../config/db.js';
 
 // Schema para los items dentro de un pedido.
 const itemPedidoSchema = new mongoose.Schema({
