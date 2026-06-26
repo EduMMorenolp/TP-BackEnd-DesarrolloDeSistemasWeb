@@ -56,13 +56,22 @@ html(lang="es")
                             th Sucursal
                             th Productos
                             th Estado
+                            th Precio Total
                             th Fecha
                             th Acciones
                     tbody#tablaPedidos
+            
+            section.card#trazabilidadPedidosCard(style="display:none")
+                .head
+                    h2 Trazabilidad de Pedido
+                    button(type="button", onclick="cerrarTrazabilidad()") ✕ Cerrar
+                #trazabilidadPedidosContent
 
         script.
             let cacheProductos = [];
 
+            const trazCard = document.getElementById('trazabilidadPedidosCard');
+            const trazContent = document.getElementById('trazabilidadPedidosContent');
             const selSucursal = document.getElementById('selSucursal');
             const lineas = document.getElementById('lineas');
             const tabla = document.getElementById('tablaPedidos');
@@ -72,6 +81,28 @@ html(lang="es")
                 msg.textContent = texto;
                 msg.className = ok ? 'estado-ok' : 'estado-bad';
             }
+
+            function formatearFecha(fecha) {
+                if (!fecha) return '-';
+                return new Date(fecha).toLocaleString('es-AR');
+            }
+
+            function formatearPrecio(precio) {
+                if (precio === undefined || precio === null) return '-';
+                return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(precio);
+            }
+
+            function estadoLabel(e) {
+                const map = {
+                    pendiente: '⏳ Pendiente',
+                    en_produccion: '🏭 En producción',
+                    despachado: '🚚 Despachado',
+                    entregado: '✅ Entregado'
+                };
+                return map[e] || e;
+            }
+
+            
 
             function normalizarProductosPedido(pedido) {
                 if (!Array.isArray(pedido.productos)) return [];
@@ -180,10 +211,12 @@ html(lang="es")
                     <td>${suc}</td>
                     <td>${htmlProductos(productos)}</td>
                     <td>${p.estado || '-'}</td>
+                    <td>${formatearPrecio(p.precioTotal)}</td>
                     <td>${p.fechaActualizacion || p.fechaPedido || '-'}</td>
                     <td>
                         <div class="mini-actions">
                             <button type="button" data-next="${p._id}">Avanzar estado</button>
+                            <button type="button" data-trace="${p._id}" class="btn-trace">📋 Trazabilidad</button>
                             <button type="button" data-cancel="${p._id}">Cancelar</button>
                         </div>
                     </td>
@@ -192,7 +225,7 @@ html(lang="es")
             }
 
             async function cargarPedidos() {
-                tabla.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
+                tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
                 try {
                     const res = await fetch('/api/pedidos', {
                         headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -200,13 +233,13 @@ html(lang="es")
                     const data = await res.json();
                     const pedidos = Array.isArray(data) ? data : [];
                     if (pedidos.length === 0) {
-                        tabla.innerHTML = '<tr><td colspan="6">Sin pedidos</td></tr>';
+                        tabla.innerHTML = '<tr><td colspan="7">Sin pedidos</td></tr>';
                         return;
                     }
                     tabla.innerHTML = '';
                     pedidos.forEach((p) => tabla.appendChild(filaPedido(p)));
                 } catch {
-                    tabla.innerHTML = '<tr><td colspan="6">Error de carga</td></tr>';
+                    tabla.innerHTML = '<tr><td colspan="7">Error de carga</td></tr>';
                 }
             }
 
@@ -244,10 +277,42 @@ html(lang="es")
                 if (!ok) return;
                 const res = await fetch(`/api/pedidos/${id}`, { 
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                    headers: { 'Authorization': `Bearer ${getToken()}` },
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+            }
+
+            function cerrarTrazabilidad() {
+                trazCard.style.display = 'none';
+            }
+
+            function mostrarTrazabilidad(data) {
+                let html = `
+                    <p><strong>Pedido ID:</strong> ${data._id}</p>
+                    <p><strong>Creado por:</strong> ${data.creadoPor.nombre} (${data.creadoPor.email}) el ${formatearFecha(data.fechaPedido)}</p>
+                    <p><strong>Sucursal:</strong> ${data.sucursal.nombre}</p>
+                    <hr>
+                    <h3>Historial de Estados</h3>
+                `;
+
+                if (data.historialEstados && data.historialEstados.length > 0) {
+                    html += '<table><thead><tr><th>Estado</th><th>Usuario</th><th>Fecha</th></tr></thead><tbody>';
+                    data.historialEstados.forEach(h => {
+                        html += `<tr>
+                            <td>${estadoLabel(h.estado)}</td>
+                            <td>${h.usuarioId.nombre} (${h.usuarioId.email})</td>
+                            <td>${formatearFecha(h.fecha)}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p><em>Sin historial de estados disponible.</em></p>';
+                }
+
+                trazContent.innerHTML = html;
+                trazCard.style.display = '';
+                trazCard.scrollIntoView({ behavior: 'smooth' });
             }
 
             tabla.addEventListener('click', async (e) => {
@@ -255,6 +320,7 @@ html(lang="es")
                 if (!btn) return;
                 const idNext = btn.getAttribute('data-next');
                 const idCancel = btn.getAttribute('data-cancel');
+                const idTrace = btn.getAttribute('data-trace');
                 try {
                     if (idNext) {
                         await avanzarEstado(idNext);
@@ -265,6 +331,17 @@ html(lang="es")
                         await cancelarPedido(idCancel);
                         setMsg('Pedido cancelado');
                         await cargarPedidos();
+                    }
+                    if (idTrace) {
+                        trazContent.innerHTML = '<p>Cargando trazabilidad...</p>';
+                        trazCard.style.display = '';
+                        trazCard.scrollIntoView({ behavior: 'smooth' });
+                        const res = await fetch(`/api/pedidos/${idTrace}/trazabilidad`, {
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo cargar trazabilidad');
+                        mostrarTrazabilidad(data);
                     }
                 } catch (err) {
                     setMsg(err.message, false);
