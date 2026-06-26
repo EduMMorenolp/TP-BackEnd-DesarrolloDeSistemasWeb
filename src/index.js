@@ -9,6 +9,7 @@ import productoRoutes from './modules/productos/producto.routes.js';
 import pedidoRoutes from './modules/pedidos/pedido.routes.js';
 import usuarioRoutes from './modules/usuarios/usuario.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import errorHandler from './shared/errorHandler.js';
 import { seedDatabase } from './config/seed.js';
 import { verifyToken } from './shared/middlewares/auth.middleware.js';
@@ -35,6 +36,7 @@ app.use('/api/sucursales', verifyToken,  sucursalRoutes);
 app.use('/api/productos',verifyToken, productoRoutes);
 app.use('/api/pedidos', verifyToken, pedidoRoutes);
 app.use('/api/usuarios', verifyToken, usuarioRoutes);
+app.use('/api/dashboard', verifyToken, dashboardRoutes);
 
 // Endpoint de health check
 app.get('/api/health', (req, res) => {
@@ -55,6 +57,10 @@ app.get('/login', function (req, res) {
 
 app.get('/index', function (req, res) {
     res.render('index');
+});
+
+app.get('/dashboard', function (req, res) {
+    res.render('dashboard');
 });
 
 app.get('/pedidos', function (req, res) {

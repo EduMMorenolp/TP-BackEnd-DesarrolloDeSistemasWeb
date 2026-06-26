@@ -22,11 +22,33 @@ const productoSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
   },
-  fechaCreacion: { 
-    type: Date, 
-    default: Date.now 
-  }, 
-});
+
+ // --- Trazabilidad ---
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario'
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario'
+  },
+  deactivatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario'
+  },
+  deactivatedAt: {
+    type: Date
+
+  } 
+  },
+  
+  { 
+      // Mongoose manejará createdAt y updatedAt, que mapeamos a nuestros campos existentes.
+    timestamps: {
+      createdAt: 'fechaCreacion',
+      updatedAt: 'fechaActualizacion'
+    }
+  });
 
 
 const Producto = mongoose.model('Producto', productoSchema);

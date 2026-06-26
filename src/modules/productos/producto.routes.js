@@ -16,4 +16,6 @@ router.put('/:id', permit(['PLANTA']), productoController.actualizarProducto);
 
 router.delete('/:id', permit(['PLANTA']), productoController.eliminarProducto);
 
+router.get('/:id/trazabilidad', productoController.trazabilidadProducto);
+
 export default router;

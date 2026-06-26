@@ -24,6 +24,8 @@ html(lang="es")
         span#userNameDisplay Cargando...      
       
       nav.nav-right
+        a(href="/index") Inicio
+        a(href="/dashboard") Dashboard
         a(href="/sucursales") Sucursales
         a(href="/productos") Productos
         a(href="/pedidos") Pedidos
@@ -54,4 +56,10 @@ html(lang="es")
         p Administracion de usuarios, roles y sucursales.
         .actions
           a.btn(href="/usuarios") Ir a Usuarios
+      article.card
+        h2 Dashboard
+        p Vista general del sistema con métricas, pedidos recientes y estado de sucursales.
+        .actions
+          a.btn(href="/dashboard") Ir al Dashboard
+   
     p.foot Desarrollado por Grupo Clouds

@@ -62,3 +62,5 @@ export async function trazabilidad(req, res, next) {
     next(error);
   }
 }
+
+

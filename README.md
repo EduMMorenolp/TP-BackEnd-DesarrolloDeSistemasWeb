@@ -1,6 +1,6 @@
 # La Espiga de Oro - Sistema de Gestión de Pedidos
 
-Sistema backend modular en Node.js + Express para la gestión de pedidos de la panificadora "La Espiga de Oro S.R.L.".
+Sistema backend modular en Node.js + Express para la gestión de pedidos de la panificadora "La Espiga de Oro S.R.L.". Incluye autenticación JWT, control de permisos por rol, trazabilidad de sucursales/productos/pedidos y un dashboard con KPIs en tiempo real.
 
 ## Contexto del Proyecto
 
@@ -8,11 +8,30 @@ La Espiga de Oro recibe pedidos de 5 sucursales propias y 10 franquicias por Wha
 
 ## Arquitectura
 
-Arquitectura feature-based con separación clara de responsabilidades:
-- **Model**: Estructura de datos y creación de objetos
-- **Service**: Lógica de negocio y validaciones
-- **Controller**: Manejo de req/res HTTP
-- **Routes**: Definición de endpoints
+Arquitectura feature-based con separación clara de responsabilidades por módulo:
+
+- **Model**: Estructura de datos, validaciones de schema y virtuals (Mongoose)
+- **Service**: Lógica de negocio, validaciones y filtros por rol
+- **Controller**: Manejo de req/res HTTP y delegación al service
+- **Routes**: Definición de endpoints + middlewares de auth y permisos
+
+Cada módulo es autónomo y se monta independientemente en `index.js` bajo `/api/<recurso>`.
+
+## Roles y Permisos
+
+El sistema maneja 4 roles con visibilidad escalonada:
+
+| Rol | Sucursales | Productos | Pedidos | Usuarios | Dashboard |
+|-----|-----------|-----------|---------|----------|-----------|
+| **ADMIN** | Crear, editar, desactivar/reactivar TODAS | CRUD completo | Ver todos | CRUD completo | Datos globales |
+| **PLANTA** | Crear, editar, desactivar/reactivar TODAS | CRUD completo | Ver todos | No accede | Datos globales |
+| **FRANQUICIA** | Editar/desactivar solo la SUYA | Solo lectura | Ver los de su sucursal | No accede | Solo su sucursal |
+| **SUCURSAL** | No accede (solo hace pedidos) | Solo lectura | Ver los de su sucursal | No accede | Solo su sucursal |
+
+Los permisos se aplican con dos middlewares reutilizables:
+
+- `permit(roles)` — pasa si el rol está en la lista (ADMIN siempre pasa)
+- `permitOwnerOr(globalRoles, ownerRoles, model, param, field)` — globalRoles pasan directo; ownerRoles solo si son dueños del recurso
 
 ## Requisitos
 
@@ -47,7 +66,7 @@ docker run -d --name mongodb -p 27017:27017 mongo:7
    ```bash
    # En PowerShell (como Administrador)
    Start-Service MongoDB
-   
+    
    # O verificar estado
    Get-Service MongoDB
    ```
@@ -102,153 +121,272 @@ Para verificar que MongoDB responde:
 mongosh --eval "db.adminCommand('ping')"
 ```
 
-## Seeding y Mantenimiento de Datos
+## Instalación y Arranque
 
-Al iniciar la aplicación (`npm run dev`), si la colección de usuarios está vacía, se ejecutará automáticamente un **seeder** que creará:
-- Dos sucursales de prueba (`Sucursal Central` y `Franquicia Demo`).
-- Cuatro usuarios base (uno por cada rol: `ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`) con la contraseña `password123`.
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
 
-Si necesitas **borrar todos los usuarios** para volver a disparar el seeder en el siguiente inicio del servidor, ejecuta este comando en tu terminal para limpiar la colección de usuarios en tu contenedor Docker:
+2. **Configurar variables de entorno:**
+   ```bash
+   cp .env.example .env
+   ```
+   Editar `.env` con los valores correctos:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/laespiga
+   PORT=3000
+   JWT_SECRET=tu_secreto_super_seguro_cambiar_en_produccion
+   JWT_EXPIRES_IN=24h
+   ```
+
+3. **Arrancar el servidor (modo desarrollo):**
+   ```bash
+   npm run dev
+   ```
+   En el primer arranque, si la colección de usuarios está vacía, el **seeder automático** crea las sucursales y usuarios base (ver sección siguiente).
+
+4. **Arrancar en modo producción:**
+   ```bash
+   npm start
+   ```
+
+Abrir `http://localhost:3000` en el navegador para acceder al login.
+
+## Seeding de Datos y Credenciales de Login
+
+El sistema incluye un **seeder** que pobla la base de datos con datos de prueba. Funciona de dos maneras:
+
+### Automático (al arrancar el servidor)
+
+Al ejecutar `npm run dev` o `npm start`, si la colección de usuarios está vacía, el seeder se dispara automáticamente y crea:
+
+- 2 sucursales (`Sucursal Central` y `Franquicia Demo`)
+- 4 usuarios (uno por rol) con contraseña `password123`
+- 4 productos de prueba (`Pan de Campo`, `Factura con Crema`, `Mignon`, `Pepas de Membrillo`)
+
+### Manual (standalone)
+
+Si querés repoblar la base de datos sin arrancar el servidor:
+
 ```bash
+# 1. Asegurate de que MongoDB esté corriendo
+# 2. Ejecutar el seeder standalone
+npm run seed
+```
+
+El script `npm run seed` ejecuta `node --env-file=.env src/config/seed.js`, que conecta a MongoDB, crea los datos base y se desconecta. Solo crea registros si las colecciones están vacías (idempotente).
+
+### Credenciales de Login
+
+> **Contraseña para todos los usuarios:** `password123`
+
+| Usuario | Email | Rol | Acceso |
+|---------|-------|-----|--------|
+| Administrador General | `admin@laespiga.com` | ADMIN | Todo el sistema +Usuarios |
+| Jefe de Planta | `planta@laespiga.com` | PLANTA | Sucursales + Productos + Pedidos |
+| Encargado Sucursal | `sucursal@laespiga.com` | SUCURSAL | Productos (lectura) + Pedidos de su sucursal |
+| Dueño Franquicia | `franquicia@laespiga.com` | FRANQUICIA | Su sucursal + Pedidos de su sucursal |
+
+Para hacer login desde la API:
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@laespiga.com",
+  "password": "password123"
+}
+```
+La respuesta incluye un `token` JWT que debe enviarse en el header `Authorization: Bearer <token>` en todos los endpoints protegidos.
+
+### Resetear datos de prueba
+
+Si necesitás **borrar todos los usuarios** para volver a disparar el seeder en el siguiente arranque:
+```bash
+# Con Docker
 docker exec -it mongodb mongosh laespiga --eval "db.usuarios.deleteMany({})"
+
+# Con instalación local
+mongosh laespiga --eval "db.usuarios.deleteMany({})"
 ```
 
-## Instalación
-
+Para resetear todo (sucursales, usuarios, productos y pedidos):
 ```bash
-# Instalar dependencias
-npm install
+# Con Docker
+docker exec -it mongodb mongosh laespiga --eval "db.dropDatabase()"
 
-# Crear .env a partir del ejemplo
-cp .env.example .env
-
-# Ejecutar en modo desarrollo
-npm run dev
-
-# Ejecutar en modo producción
-npm start
+# Con instalación local
+mongosh laespiga --eval "db.dropDatabase()"
 ```
+Luego ejecutar `npm run seed` para repoblar.
 
 ## Estructura del Proyecto
 
 ```
-espiga-de-oro/
+la-espiga-de-oro/
 ├── src/
 │   ├── config/
-│   │   └── db.js                      # Conexión a MongoDB con Mongoose
+│   │   ├── db.js                      # Conexión a MongoDB con Mongoose
+│   │   └── seed.js                    # Seeder de datos de prueba (standalone)
 │   ├── modules/                       # Módulos feature-based
-│   │   ├── auth/
+│   │   ├── auth/                      # Autenticación JWT
 │   │   │   ├── auth.controller.js
 │   │   │   ├── auth.routes.js
 │   │   │   └── auth.service.js
+│   │   ├── dashboard/                 # Dashboard con KPIs y resumen
+│   │   │   ├── dashboard.controller.js
+│   │   │   ├── dashboard.routes.js
+│   │   │   └── dashboard.service.js
 │   │   ├── productos/
 │   │   │   ├── producto.model.js
 │   │   │   ├── producto.service.js
 │   │   │   ├── producto.controller.js
 │   │   │   └── producto.routes.js
 │   │   ├── sucursales/
-│   │   │   ├── sucursal.model.js
-│   │   │   ├── sucursal.service.js
+│   │   │   ├── sucursal.model.js      # Campos de auditoría (createdBy, updatedBy, etc.)
+│   │   │   ├── sucursal.service.js    # CRUD + activar + trazabilidad
 │   │   │   ├── sucursal.controller.js
 │   │   │   └── sucursal.routes.js
 │   │   ├── pedidos/
-│   │   │   ├── pedido.model.js
+│   │   │   ├── pedido.model.js        # Virtual 'id' + timestamps + historialEstados
 │   │   │   ├── pedido.service.js
 │   │   │   ├── pedido.controller.js
 │   │   │   └── pedido.routes.js
 │   │   └── usuarios/
-│   │       ├── usuario.model.js
+│   │       ├── usuario.model.js       # bcrypt + matchPassword
 │   │       ├── usuario.service.js
 │   │       ├── usuario.controller.js
 │   │       └── usuario.routes.js
-│   ├── public/                        # Assets estáticos (CSS, imágenes)
-│   ├── shared/                        # Recursos compartidos (middlewares, helpers)
+│   ├── public/                        # Frontend estático (JS + CSS)
+│   │   ├── auth.js                    # Helpers de token y permisos del lado cliente
+│   │   ├── dashboard.js               # Fetch del dashboard y render de KPIs
+│   │   └── styles.css
+│   ├── shared/                        # Recursos compartidos
 │   │   ├── middlewares/
-│   │   │   └── auth.middleware.js
+│   │   │   ├── auth.middleware.js     # verifyToken + checkRole
+│   │   │   └── permission.middleware.js # permit + permitOwnerOr
+│   │   ├── pedidos.json               # Datos legacy (migración en curso)
+│   │   ├── productos.json
 │   │   └── errorHandler.js
 │   ├── view/                          # Vistas Pug
-│   └── index.js                       # Entry point
-├── .env                               # Variables de entorno
+│   │   ├── login.pug
+│   │   ├── dashboard.pug
+│   │   ├── index.pug
+│   │   ├── sucursales.pug             # Panel de trazabilidad integrado
+│   │   ├── productos.pug
+│   │   ├── pedidos.pug
+│   │   └── usuarios.pug
+│   └── index.js                       # Entry point (startup + seed)
+├── .env.example                       # Template de variables de entorno
 ├── package.json
 ├── README.md
-└── postman_collection.json
+└── La Espiga de Oro - API Collection.postman_collection.json
 ```
 
 ## Endpoints de la API
 
+> Todos los endpoints (excepto `/api/auth/login` y `/api/health`) requieren autenticación JWT vía el header `Authorization: Bearer <token>`.
+
+### Dashboard (`/api/dashboard`)
+
+|Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/dashboard` | Devuelve KPIs (pedidos pendientes/en producción/entregados), últimos 5 pedidos y estado de sucursales. Filtra por scope del usuario logueado. |
+
 ### Sucursales (`/api/sucursales`)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/sucursales` | Lista todas las sucursales |
-| GET | `/api/sucursales/:id` | Obtiene sucursal por ID |
-| POST | `/api/sucursales` | Crea nueva sucursal |
-| PUT | `/api/sucursales/:id` | Actualiza sucursal |
-| DELETE | `/api/sucursales/:id` | Desactiva sucursal |
+| Método | Endpoint | Permiso | Descripción |
+|--------|----------|---------|-------------|
+| GET | `/api/sucursales` | Autenticado | Lista sucursales según scope del usuario |
+| GET | `/api/sucursales/:id` | Autenticado | Obtiene sucursal por ID |
+| GET | `/api/sucursales/:id/trazabilidad` | Autenticado | Trazabilidad completa: auditoría (createdBy, updatedBy, deactivatedBy) + resumen de pedidos |
+| POST | `/api/sucursales` | PLANTA / ADMIN | Crea nueva sucursal o franquicia |
+| PUT | `/api/sucursales/:id` | PLANTA (todas) / FRANQUICIA (suya) | Actualiza datos de sucursal |
+| DELETE | `/api/sucursales/:id` | PLANTA (todas) / FRANQUICIA (suya) | Desactiva sucursal (soft delete — valida pedidos activos) |
+| PATCH | `/api/sucursales/:id/activar` | PLANTA (todas) / FRANQUICIA (suya) | Reactiva sucursal desactivada |
 
 ### Productos (`/api/productos`)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/productos` | Lista todos los productos |
-| GET | `/api/productos/:id` | Obtiene producto por ID |
-| POST | `/api/productos` | Crea nuevo producto |
-| PUT | `/api/productos/:id` | Actualiza producto |
-| DELETE | `/api/productos/:id` | Elimina producto |
+| Método | Endpoint | Permiso | Descripción |
+|--------|----------|---------|-------------|
+| GET | `/api/productos` | Autenticado | Lista todos los productos del catálogo |
+| GET | `/api/productos/:id` | Autenticado | Obtiene producto por ID |
+| GET | `/api/productos/:id/trazabilidad` | Autenticado | Trazabilidad del producto |
+| POST | `/api/productos` | PLANTA / ADMIN | Crea nuevo producto |
+| PUT | `/api/productos/:id` | PLANTA / ADMIN | Actualiza producto |
+| DELETE | `/api/productos/:id` | PLANTA / ADMIN | Elimina producto |
 
 ### Pedidos (`/api/pedidos`)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/pedidos` | Lista todos los pedidos (con populate) |
-| GET | `/api/pedidos/:id` | Obtiene pedido por ID (con populate) |
-| POST | `/api/pedidos` | Crea nuevo pedido |
-| PATCH | `/api/pedidos/:id/estado` | Cambia estado del pedido |
-| DELETE | `/api/pedidos/:id` | Cancela pedido |
+| Método | Endpoint | Permiso | Descripción |
+|--------|----------|---------|-------------|
+| GET | `/api/pedidos` | Autenticado | Lista todos los pedidos (con populate de sucursal) |
+| GET | `/api/pedidos/:id` | Autenticado | Obtiene pedido por ID (con populate) |
+| GET | `/api/pedidos/:id/trazabilidad` | Autenticado | Trazabilidad del pedido |
+| POST | `/api/pedidos` | Autenticado | Crea nuevo pedido |
+| PATCH | `/api/pedidos/:id/estado` | Autenticado | Cambia estado del pedido |
+| DELETE | `/api/pedidos/:id` | Autenticado | Cancela pedido |
 
 ### Autenticación (`/api/auth`)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | Login público: recibe `{ email, password }` y devuelve `{ token }`. |
-| GET | `/api/auth/me` | Devuelve perfil del usuario autenticado (requiere `Authorization: Bearer <token>`). |
+| Método | Endpoint | Permiso | Descripción |
+|--------|----------|---------|-------------|
+| POST | `/api/auth/login` | Público | Recibe `{ email, password }` y devuelve `{ usuario, token }` |
+| GET | `/api/auth/me` | Autenticado | Devuelve perfil del usuario logueado |
 
-### Usuarios
+### Usuarios (`/api/usuarios`)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/usuarios` | Lista todos los usuarios (requiere rol `ADMIN`). |
-| GET | `/api/usuarios/:id` | Obtiene usuario por ID (requiere rol `ADMIN`). |
-| POST | `/api/usuarios` | Crea nuevo usuario. Actualmente está abierto temporalmente para permitir crear el primer `ADMIN` (en producción proteger con `verifyToken` + `checkRole(['ADMIN'])`). |
-| PUT | `/api/usuarios/:id` | Actualiza usuario (requiere rol `ADMIN`). |
-| DELETE | `/api/usuarios/:id` | Elimina usuario (requiere rol `ADMIN`). |
+| Método | Endpoint | Permiso | Descripción |
+|--------|----------|---------|-------------|
+| GET | `/api/usuarios` | ADMIN | Lista todos los usuarios |
+| GET | `/api/usuarios/:id` | ADMIN | Obtiene usuario por ID |
+| POST | `/api/usuarios` | ADMIN | Crea nuevo usuario |
+| PUT | `/api/usuarios/:id` | ADMIN | Actualiza usuario |
+| DELETE | `/api/usuarios/:id` | ADMIN | Elimina usuario |
 
 Notas:
 
 - Las contraseñas se almacenan encriptadas con `bcryptjs` (ver `src/modules/usuarios/usuario.model.js`).
 - El seeder crea usuarios base (`ADMIN`, `PLANTA`, `SUCURSAL`, `FRANQUICIA`) con la contraseña `password123` si la colección está vacía.
+- Los tokens JWT expiran en 24h por defecto (configurable via `JWT_EXPIRES_IN` en `.env`).
 
 ### Health Check
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/health` | Verifica estado del servidor |
+| GET | `/api/health` | Verifica estado del servidor (sin auth) |
+
+### Vistas (frontend Pug)
+
+| Ruta | Vista | Descripción |
+|------|-------|-------------|
+| `/login` | `login.pug` | Pantalla de login |
+| `/index` | `index.pug` | Menú principal de navegación |
+| `/dashboard` | `dashboard.pug` | KPIs + últimos pedidos + estado de sucursales |
+| `/sucursales` | `sucursales.pug` | CRUD de sucursales + panel de trazabilidad |
+| `/productos` | `productos.pug` | Catálogo de productos |
+| `/pedidos` | `pedidos.pug` | Gestión de pedidos |
+| `/usuarios` | `usuarios.pug` | Gestión de usuarios (solo ADMIN) |
 
 ## Tecnologías Utilizadas
 
 - **Node.js**: Runtime de JavaScript
 - **Express.js 5**: Framework web
 - **MongoDB**: Base de datos NoSQL
-- **Mongoose**: ODM para MongoDB
+- **Mongoose**: ODM para MongoDB (schemas, validaciones, virtuals, populate)
+- **jsonwebtoken**: Generación y validación de tokens JWT
+- **bcryptjs**: Encriptación de contraseñas
 - **dotenv**: Variables de entorno
-- **UUID**: Generación de IDs únicos (en migración a ObjectId de MongoDB)
 - **Pug**: Motor de plantillas para vistas
+
+## Postman
+
+Para probar la API, importar la colección `La Espiga de Oro - API Collection.postman_collection.json` (en la raíz del proyecto) en Postman. La colección incluye los endpoints de todos los módulos con ejemplos de request bodies.
 
 ## Despliegue
 
 El servidor inicia en `http://localhost:3000` por defecto.
-
-Para importar la colección de Postman, utiliza el archivo `postman_collection.json` incluido en el proyecto.
 
 ## Equipo de Desarrollo
 
