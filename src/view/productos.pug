@@ -23,6 +23,8 @@ html(lang="es")
                 span Hola, 
                 span#userNameDisplay Cargando...
             nav.nav-right
+                a(href="/index") Inicio
+                a(href="/dashboard") Dashboard
                 a(href="/sucursales") Sucursales
                 a(href="/productos") Productos
                 a(href="/pedidos") Pedidos
@@ -30,10 +32,10 @@ html(lang="es")
                 a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
         main
         
-            .top
-                h1 Productos
-                div
-                    a.link-btn(href="/index") Inicio
+            section.card
+                .head
+                    h1 Productos        
+                    
 
             section.card#altaProductoCard
                 h2 Alta rapida
