@@ -1,0 +1,75 @@
+doctype html
+html(lang="es")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+
+    title Dashboard - La Espiga de Oro
+
+    link(rel="stylesheet", href="/public/styles.css")
+
+    script(src="/public/auth.js")
+    script(src="/public/dashboard.js" defer)
+
+  body
+
+  header.user-header
+    div.user-info
+      span Hola,
+      span#userNameDisplay Cargando...
+
+    nav.nav-right
+      a(href="/index") Inicio
+      a(href="/dashboard") Dashboard
+      a(href="/sucursales") Sucursales
+      a(href="/productos") Productos
+      a(href="/pedidos") Pedidos
+      a.admin-link(href="/usuarios", style="display:none") Usuarios
+      a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
+
+  main
+
+    section.card
+      .head
+        h1 Dashboard
+
+    section.grid
+
+      article.card
+        h3 Pedidos pendientes
+        h1#kpiPendientes 0
+
+      article.card
+        h3 Pedidos en producción
+        h1#kpiEnCurso 0
+
+      article.card
+        h3 Pedidos entregados
+        h1#kpiEntregados 0
+
+    section.grid(style="grid-template-columns: 2fr 1fr; margin-top: 2rem;")
+
+      article.card
+
+        h2 Últimos pedidos
+
+        table
+          thead
+            tr
+              th ID
+              th Sucursal
+              th Estado
+              th Fecha
+          tbody#ultimosPedidos
+
+      article.card
+
+        h2 Estado de sucursales
+
+        table
+          thead
+            tr
+              th Nombre
+              th Tipo
+              th Estado
+          tbody#estadoSucursales
