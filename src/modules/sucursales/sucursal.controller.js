@@ -63,11 +63,4 @@ export async function trazabilidad(req, res, next) {
   }
 }
 
-export async function activar(req, res, next) {
-  try {
-    const data = await service.activar(req.params.id);
-    res.status(200).json(data);
-  } catch (error) {
-    next(error);
-  }
-}
+
