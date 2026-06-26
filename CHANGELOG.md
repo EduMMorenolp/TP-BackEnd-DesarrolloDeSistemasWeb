@@ -1,5 +1,179 @@
 # Changelog
 
+## Trazabilidad y Precio Total en Pedidos (2026-06-24)
+
+**Asistido por:** IA (Gemini Code Assist)
+
+**Resumen:**
+Se implementó una funcionalidad completa de trazabilidad para el módulo de pedidos, replicando el patrón ya existente en sucursales. Ahora, cada pedido registra un historial inmutable de sus cambios de estado, incluyendo qué usuario realizó el cambio y cuándo. Adicionalmente, se añadió el cálculo y visualización del precio total del pedido, un dato crucial que faltaba tanto en el backend como en la interfaz de usuario.
+
+**Logros:**
+*   **Auditoría Completa de Pedidos:** El modelo `Pedido` ahora almacena un `historialEstados` que funciona como un log de auditoría.
+*   **Cálculo de Precio Total:** El servicio de creación de pedidos calcula automáticamente el `precioTotal` basándose en los productos y cantidades, guardándolo en la base de datos.
+*   **Endpoint de Trazabilidad Dedicado:** Se creó la ruta `GET /api/pedidos/:id/trazabilidad` que devuelve el historial del pedido con los datos de los usuarios populados, listo para ser consumido por el frontend.
+*   **Integración Transparente en la UI:** La vista `pedidos.pug` fue actualizada para mostrar la nueva columna de precio y un botón de "Trazabilidad" que despliega un panel con el historial detallado, sin recargar la página.
+
+**Archivos Modificados:**
+
+| Archivo | Cambio |
+| :--- | :--- |
+| `src/modules/pedidos/pedido.model.js` | **Feat:** Añadidos campos `precioTotal`, `creadoPor` y `historialEstados` al schema. |
+| `src/modules/pedidos/pedido.service.js` | **Feat:** Lógica para calcular precio y registrar el historial en `crear()` y `cambiarEstado()`. Nuevo servicio `obtenerTrazabilidad()`. |
+| `src/modules/pedidos/pedido.controller.js` | **Feat:** Nuevos handlers para pasar el `userId` al servicio y para el endpoint de trazabilidad. |
+| `src/modules/pedidos/pedido.routes.js` | **Feat:** Añadida la nueva ruta `GET /:id/trazabilidad`. |
+| `src/view/pedidos.pug` | **Feat:** Añadida columna "Precio Total", botón de trazabilidad, panel de detalles y el JS correspondiente para la interacción. |
+
+---
+
+## Seguridad + UX por rol en Sucursales y Productos (2026-06-20)
+
+**Asistido por IA** (OpenCode + Engram Memory)
+
+### Resumen
+
+Cuatro mejoras de seguridad y UX sobre el módulo Sucursales, alineando la app con el modelo de negocio: PLANTA administra todo, FRANQUICIA solo su local, SUCURSAL es read-only. Se corrigió un bug de seguridad crítico en `permitOwnerOr` (los roles listados pasaban directo sin verificar propiedad), se unificaron los timestamps de Sucursal con el patrón de Pedido, se filtró el listado por propiedad, y se bloqueó el CRUD de productos para FRANQUICIA/SUCURSAL.
+
+### Cambios
+
+#### 1. Fix de seguridad: `permitOwnerOr` verificaba propiedad decorativamente
+
+**Bug crítico**: el middleware `permitOwnerOr(['PLANTA','FRANQUICIA'], ...)` pasaba a cualquier rol listado **sin verificar propiedad**. La verificación de "owner" era código muerto — una FRANQUICIA podía editar/desactivar TODAS las sucursales del sistema, contradiciendo el CHANGELOG del 2026-05-24.
+
+**Fix**: rediseño de la firma para separar `globalRoles` (pasan sin verificar, ej PLANTA) de `ownerRoles` (verifican propiedad, ej FRANQUICIA). SUCURSAL recibe 403.
+
+#### 2. Timestamps unificados en Sucursal
+
+`fechaCreacion` manual eliminado. Ahora usa `timestamps: { createdAt: 'fechaCreacion', updatedAt: 'fechaActualizacion' }` — mismo patrón que `pedido.model.js`. El Pug sigue leyendo `s.fechaCreacion` sin cambios. Panel de trazabilidad enriquecido: ahora muestra fecha de creación y de última modificación junto a `createdBy`/`updatedBy`.
+
+#### 3. Listado de sucursales filtrado por propiedad
+
+`listar()` ahora recibe `req.user`: ADMIN/PLANTA ven todas, FRANQUICIA y SUCURSAL ven solo la suya (activa o desactivada, para permitir reactivar). Frontend oculta la card "Alta de sucursal" y los botones de acción para roles no-administradores.
+
+#### 4. Productos: CRUD solo PLANTA
+
+POST/PUT/DELETE de productos ahora `permit(['PLANTA'])` (antes permitía FRANQUICIA). Frontend oculta el form "Alta rápida" y los botones Editar/Eliminar para FRANQUICIA y SUCURSAL. El catálogo (GET) sigue visible para todos porque lo usan para armar pedidos.
+
+### Matriz de permisos resultante
+
+| Acción | ADMIN | PLANTA | FRANQUICIA | SUCURSAL |
+|--------|:-----:|:------:|:----------:|:--------:|
+| Crear sucursal | ✅ | ✅ | ❌ | ❌ |
+| Editar/desactivar cualquier sucursal | ✅ | ✅ | ❌ | ❌ |
+| Editar/desactivar la suya | ✅ | ✅ | ✅ | ❌ |
+| Ver todas las sucursales | ✅ | ✅ | ❌ solo la suya | ❌ solo la suya |
+| Crear/editar/eliminar productos | ✅ | ✅ | ❌ | ❌ |
+| Ver catálogo de productos | ✅ | ✅ | ✅ | ✅ |
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/shared/middlewares/permission.middleware.js` | Fix: `permitOwnerOr` rediseñado con `globalRoles`/`ownerRoles`. JSDoc actualizado. |
+| `src/modules/sucursales/sucursal.routes.js` | `POST` solo PLANTA. `PUT`/`DELETE`/`PATCH` con `permitOwnerOr(['PLANTA'],['FRANQUICIA'],...)`. |
+| `src/modules/sucursales/sucursal.controller.js` | `actualizar` pasa `req.user.rol` al service. `listar` pasa `req.user`. |
+| `src/modules/sucursales/sucursal.service.js` | `actualizar` filtra `tipo` para no-PLANTA/no-ADMIN. `listar(user)` filtra por propiedad. |
+| `src/modules/sucursales/sucursal.model.js` | `fechaCreacion` manual → `timestamps` mapeado a español. |
+| `src/modules/productos/producto.routes.js` | `POST`/`PUT`/`DELETE` con `permit(['PLANTA'])`. |
+| `src/public/auth.js` | Nuevas helpers `getUserRole()`, `canManageSucursales()`, `canManageProductos()`. |
+| `src/view/sucursales.pug` | Card alta con id, oculta por rol. `fila()` renderiza botones según rol. Trazabilidad muestra fechas. |
+| `src/view/productos.pug` | Card alta con id, oculta por rol. `filaProducto()` muestra — en Acciones para no-admins. |
+
+**Total: 9 archivos modificados**
+
+### Decisiones de diseño
+
+- **Franquiciado = 1 local**: `Usuario.sucursalId` sigue siendo `ObjectId` único. Si un dueño abre otro local, se crea otro usuario dedicado. Mantiene trazabilidad limpia y no rompe el modelo.
+- **Soft delete sin ocultar desactivadas**: el filtro del listado es por **propiedad**, no por estado. Las desactivadas siguen visibles para permitir reactivarlas.
+- **Defensa en profundidad sobre `tipo`**: el service elimina `tipo` del payload si el rol no es PLANTA/ADMIN, previniendo auto-ascenso de franquicia a sucursal.
+- **`canManageSucursales()` y `canManageProductos()` separados** aunque devuelvan el mismo conjunto (ADMIN/PLANTA), por semántica de dominio — si mañana cambia quién administra productos, se cambia un solo lugar.
+
+---
+
+## Trazabilidad de sucursales + restauración endpoint activar (2026-06-20)
+
+**Asistido por IA** (OpenCode + Engram Memory)
+
+### Resumen
+
+Feature de trazabilidad de sucursales: campos de auditoría (`createdBy`, `updatedBy`, `deactivatedBy`, `deactivatedAt`) en el modelo, nuevo endpoint `GET /api/sucursales/:id/trazabilidad` con populate de usuario y resumen de pedidos, y panel de trazabilidad en `sucursales.pug`. Además se restauró el endpoint `PATCH /api/sucursales/:id/activar` (con su botón condicional en el Pug) que se había perdido porque el commit `509f843` nunca se pusheó a `origin/pre-main` — solo existía en `pre-main` local. La versión restaurada mejora la original: limpia `deactivatedBy`/`deactivatedAt` al reactivar, setea `updatedBy`, y aplica `permitOwnerOr` para autorización por propiedad.
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/modules/sucursales/sucursal.model.js` | Feat: campos de trazabilidad `createdBy`, `updatedBy`, `deactivatedBy` (ref Usuario) + `deactivatedAt` (Date). |
+| `src/modules/sucursales/sucursal.service.js` | Feat: `crear()` setea `createdBy`; `actualizar()` setea `updatedBy`; `desactivar()` setea `deactivatedBy`/`deactivatedAt`. Feat: `obtenerTrazabilidad(id)` con populate de usuario y resumen de pedidos (total, activos, últimos 5). Feat: `activar(id, userId)` reactiva sucursal, limpia campos de desactivación y setea `updatedBy`. |
+| `src/modules/sucursales/sucursal.controller.js` | Feat: handler `trazabilidad(req, res, next)`. Feat: handler `activar(req, res, next)`. |
+| `src/modules/sucursales/sucursal.routes.js` | Feat: `GET /:id/trazabilidad`. Feat: `PATCH /:id/activar` con `permitOwnerOr(['PLANTA','FRANQUICIA'], ...)`. |
+| `src/view/sucursales.pug` | Feat: panel de trazabilidad con grid de auditoría + pedidos. Feat: botón "📋 Trazabilidad" por fila. Feat: botón condicional "Activar"/"Desactivar" según `s.activa`. Handler `data-on` para `PATCH /activar`. |
+| `src/public/styles.css` | Feat: estilos `.btn-trace`, `.trazabilidad-grid` (grid 2 columnas), `#trazabilidadCard`. |
+
+**Total: 6 archivos modificados**
+
+### Logros
+
+- Auditoría completa: cada sucursal registra quién la creó, modificó y desactivó, y cuándo.
+- Endpoint de trazabilidad con populate de usuario + agregación de pedidos en una sola query.
+- Restaurado el endpoint `PATCH /activar` que se había perdido (commit `509f843` nunca pusheado a `origin/pre-main`).
+- El botón de acción cambia dinámicamente entre "Activar" y "Desactivar" según el estado de la sucursal.
+- La versión restaurada de `activar` mejora la original: limpia `deactivatedBy`/`deactivatedAt` y aplica `permitOwnerOr`.
+
+### Notas
+
+- El commit `509f843` (2026-05-13) quedó solo en `pre-main` local sin pushear a `origin/pre-main`, por eso no estaba disponible al crear la rama `trazabilidad-sucursales` desde `origin/pre-main`. Como `origin/pre-main` y `origin/main` apuntaban al mismo commit (`822dc52`), la rama nació sin el endpoint activar.
+- Se decidió NO pushear `509f843` a `origin/pre-main` retroactivamente: el código ya está restaurado y mejorado en esta rama.
+
+---
+
+## Módulo Usuarios — Admin (2026-06-19)
+
+**Asistido por IA**
+
+### Resumen
+
+Se implementó un nuevo módulo de administración de usuarios visible solo para rol `ADMIN`. Permite listar todos los usuarios, crear nuevos, editar datos y rol, y desactivar/reactivar usuarios. El link de navegación y la card en el dashboard se muestran condicionalmente solo para administradores.
+
+### Archivos modificados/creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/view/usuarios.pug` | Nuevo — Vista completa del módulo: alta de usuario, listado con editar/desactivar/reactivar, y JS embebido conectado a los endpoints existentes. |
+| `src/index.js` | Feat: ruta `GET /usuarios` que renderiza `usuarios.pug`. |
+| `src/public/auth.js` | Feat: nueva función `isAdmin()`. |
+| `src/view/index.pug` | Feat: nav link y card "Módulo Usuarios" visibles solo para ADMIN via JS condicional. |
+| `src/view/sucursales.pug` | Feat: nav link "Usuarios" visible solo para ADMIN. |
+| `src/view/productos.pug` | Feat: nav link "Usuarios" visible solo para ADMIN. |
+| `src/view/pedidos.pug` | Feat: nav link "Usuarios" visible solo para ADMIN. |
+| `src/modules/usuarios/usuario.routes.js` | Fix: `verifyToken` + `checkRole(['ADMIN'])` agregado al `POST /api/usuarios` (estaba público). |
+
+### Notas
+
+- El backend ya existía con CRUD de usuarios protegido por rol ADMIN, solo faltaba la vista.
+- El botón de acción cambia dinámicamente entre "Desactivar" (DELETE → `activo: false`) y "Reactivar" (PUT → `activo: true`).
+- Edición de usuarios mediante prompts secuenciales (mismo patrón que sucursales/productos), incluyendo cambio de rol y reasignación de sucursal.
+
+## Seguridad: permisos por rol y autorización por propiedad (2026-05-24)
+
+**Asistido por IA**
+
+### Resumen
+
+Se implementó una capa de autorización más fina que complementa la autenticación JWT: un middleware `permit` para permisos por rol y `permitOwnerOr` para autorización por propiedad de recursos (p. ej. que una `FRANQUICIA` solo edite sus sucursales). Estos middlewares se aplicaron en los puntos de montaje de rutas relevantes para evitar exposición accidental de endpoints.
+
+### Archivos modificados/creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/shared/middlewares/permission.middleware.js` | Nuevo middleware `permit` y `permitOwnerOr` para autorización por rol y por propiedad. |
+| `src/modules/productos/producto.routes.js` | Feat: `POST/PUT/DELETE` protegidos con `permit(['PLANTA','FRANQUICIA'])`. |
+| `src/modules/sucursales/sucursal.routes.js` | Feat: `POST` protegido con `permit(['PLANTA','FRANQUICIA'])`; `PUT/DELETE` usan `permitOwnerOr(...)` para autorizar por pertenencia. |
+
+### Notas
+
+- `ADMIN` mantiene bypass implícito en los middlewares.
+- Para soportar productos locales por franquicia, se recomienda añadir `sucursalId` o `scope` a `Producto` (no modificado automáticamente). 
+- Se sugiere añadir comprobaciones duplicadas en los controllers (double-check) para evitar bypass en lógica de negocio.
+
 ## Seguridad: autenticación JWT aplicada a rutas API (2026-05-21)
 
 **Cambio Manual**

@@ -1,223 +1,276 @@
 doctype html
 html(lang="es")
-	head
-		meta(charset="UTF-8")
-		meta(name="viewport", content="width=device-width, initial-scale=1.0")
-		title Sucursales - La Espiga de Oro
-		style.
-			:root {
-				--bg: #f8f5ee;
-				--ink: #1d1914;
-				--line: #d8ccb9;
-				--card: #fff;
-				--brand: #7b3f00;
-				--ok: #0f766e;
-				--bad: #b91c1c;
-			}
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        
+        title Sucursales - La Espiga de Oro
+        link(rel="stylesheet", href="/public/styles.css")
+        script(src="/public/auth.js")
+        script.
+            document.addEventListener('DOMContentLoaded', () => {
+                if (isAdmin()) {
+                    document.querySelectorAll('.admin-link').forEach(el => el.style.display = '');
+                }
+                if (!canManageSucursales()) {
+                    const altaCard = document.getElementById('altaSucursalCard');
+                    if (altaCard) altaCard.style.display = 'none';
+                }
+            });
+        
+        
+    body
+        header.user-header
+            div.user-info
+                span Hola, 
+                span#userNameDisplay Cargando...
+            nav.nav-right
+                a(href="/sucursales") Sucursales
+                a(href="/productos") Productos
+                a(href="/pedidos") Pedidos
+                a.admin-link(href="/usuarios", style="display:none") Usuarios
+                a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
+        main
+            section.card
+                .head
+                    h1 Sucursales y Franquicias
+                    a.btn(href="/index") Inicio
+            section.card#altaSucursalCard
+                h2 Alta de sucursal
+                form#formSucursal.grid
+                    input(type="text", name="nombre", placeholder="Nombre", required=true)
+                    select(name="tipo", required=true)
+                        option(value="sucursal") sucursal
+                        option(value="franquicia") franquicia
+                    input(type="text", name="direccion", placeholder="Direccion", required=true)
+                    button(type="submit") Crear
+                p#msg
 
-			* { box-sizing: border-box; }
+            section.card
+                .head
+                    h2 Listado
+                    button(type="button", onclick="cargarSucursales()") Recargar
+                table
+                    thead
+                        tr
+                            th ID
+                            th Nombre
+                            th Tipo
+                            th Direccion
+                            th Activa
+                            th Fecha
+                            th Acciones
+                    tbody#tabla
 
-			body {
-				margin: 0;
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-				color: var(--ink);
-				background: var(--bg);
-			}
+            section.card#trazabilidadCard(style="display:none")
+                .head
+                    h2 Trazabilidad
+                    button(type="button", onclick="cerrarTrazabilidad()") ✕ Cerrar
+                #trazabilidadContent
 
-			main {
-				max-width: 1050px;
-				margin: 0 auto;
-				padding: 1rem;
-			}
+        script.
+            const form = document.getElementById('formSucursal');
+            const tabla = document.getElementById('tabla');
+            const msg = document.getElementById('msg');
+            const trazCard = document.getElementById('trazabilidadCard');
+            const trazContent = document.getElementById('trazabilidadContent');
 
-			.card {
-				background: var(--card);
-				border: 1px solid var(--line);
-				border-radius: 12px;
-				padding: 1rem;
-				margin-bottom: 1rem;
-			}
+            function setMsg(texto, ok = true) {
+                msg.textContent = texto;
+                msg.className = ok ? 'ok' : 'bad';
+            }
 
-			.head {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				flex-wrap: wrap;
-				gap: .5rem;
-			}
+            function cerrarTrazabilidad() {
+                trazCard.style.display = 'none';
+            }
 
-			.grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-				gap: .7rem;
-			}
+            function formatearFecha(fecha) {
+                if (!fecha) return '-';
+                return new Date(fecha).toLocaleString('es-AR');
+            }
 
-			input, select {
-				width: 100%;
-				border: 1px solid #cabca7;
-				border-radius: 8px;
-				padding: .62rem;
-			}
+            function estadoLabel(e) {
+                const map = {
+                    pendiente: '⏳ Pendiente',
+                    en_produccion: '🏭 En producción',
+                    despachado: '🚚 Despachado',
+                    entregado: '✅ Entregado'
+                };
+                return map[e] || e;
+            }
 
-			button, .btn {
-				border: 0;
-				border-radius: 8px;
-				padding: .55rem .85rem;
-				background: var(--brand);
-				color: #fff;
-				font-weight: 700;
-				cursor: pointer;
-				text-decoration: none;
-			}
+            function mostrarTrazabilidad(data) {
+                const s = data;
+                const p = data.pedidos || {};
 
-			table {
-				width: 100%;
-				border-collapse: collapse;
-			}
+                let html = '<div class="trazabilidad-grid">';
 
-			th, td {
-				border-bottom: 1px solid #ece4d6;
-				text-align: left;
-				padding: .55rem;
-				vertical-align: top;
-			}
+                // Columna 1 — Auditoría
+                html += '<div><h3>🔍 Auditoría</h3><table><tbody>';
+                html += `<tr><td><strong>Creado por</strong></td><td>${s.createdBy ? s.createdBy.nombre + ' (' + s.createdBy.email + ')' : '— (anterior a trazabilidad)'}${s.fechaCreacion ? ' <br><small>' + formatearFecha(s.fechaCreacion) + '</small>' : ''}</td></tr>`;
+                html += `<tr><td><strong>Última modificación</strong></td><td>${s.updatedBy ? s.updatedBy.nombre + ' (' + s.updatedBy.email + ')' : '—'}${s.fechaActualizacion ? ' <br><small>' + formatearFecha(s.fechaActualizacion) + '</small>' : ''}</td></tr>`;
+                html += `<tr><td><strong>Desactivado por</strong></td><td>${s.deactivatedBy ? s.deactivatedBy.nombre + ' (' + s.deactivatedBy.email + ')' : '—'}</td></tr>`;
+                html += `<tr><td><strong>Fecha desactivación</strong></td><td>${s.deactivatedAt ? formatearFecha(s.deactivatedAt) : '—'}</td></tr>`;
+                html += '</tbody></table></div>';
 
-			.ok { color: var(--ok); }
-			.bad { color: var(--bad); }
-	body
-		main
-			section.card
-				.head
-					h1 Sucursales y Franquicias
-					a.btn(href="/index") Inicio
-			section.card
-				h2 Alta de sucursal
-				form#formSucursal.grid
-					input(type="text", name="nombre", placeholder="Nombre", required=true)
-					select(name="tipo", required=true)
-						option(value="sucursal") sucursal
-						option(value="franquicia") franquicia
-					input(type="text", name="direccion", placeholder="Direccion", required=true)
-					button(type="submit") Crear
-				p#msg
+                // Columna 2 — Pedidos
+                html += '<div><h3>📦 Pedidos asociados</h3>';
+                html += `<p><strong>Total:</strong> ${p.total} &nbsp;|&nbsp; <strong>Activos:</strong> ${p.activos}</p>`;
 
-			section.card
-				.head
-					h2 Listado
-					button(type="button", onclick="cargarSucursales()") Recargar
-				table
-					thead
-						tr
-							th ID
-							th Nombre
-							th Tipo
-							th Direccion
-							th Activa
-							th Fecha
-							th Acciones
-					tbody#tabla
+                if (p.ultimos && p.ultimos.length > 0) {
+                    html += '<table><thead><tr><th>Estado</th><th>Fecha</th><th>Obs.</th></tr></thead><tbody>';
+                    p.ultimos.forEach(ped => {
+                        html += `<tr>
+                            <td>${estadoLabel(ped.estado)}</td>
+                            <td>${formatearFecha(ped.fechaPedido)}</td>
+                            <td>${ped.observaciones || '—'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p><em>Sin pedidos registrados</em></p>';
+                }
+                html += '</div></div>';
 
-		script.
-			const form = document.getElementById('formSucursal');
-			const tabla = document.getElementById('tabla');
-			const msg = document.getElementById('msg');
+                trazContent.innerHTML = html;
+                trazCard.style.display = '';
+                trazCard.scrollIntoView({ behavior: 'smooth' });
+            }
 
-			function setMsg(texto, ok = true) {
-				msg.textContent = texto;
-				msg.className = ok ? 'ok' : 'bad';
-			}
+            function fila(s) {
+                const tr = document.createElement('tr');
+                const rol = getUserRole();
+                const puedeAcciones = rol === 'ADMIN' || rol === 'PLANTA' || rol === 'FRANQUICIA';
+                let acciones = '';
+                if (puedeAcciones) {
+                    acciones += `<button type="button" data-edit="${s._id}">Editar</button>`;
+                    acciones += s.activa === false
+                        ? `<button type="button" data-on="${s._id}">Activar</button>`
+                        : `<button type="button" data-off="${s._id}">Desactivar</button>`;
+                }
+                acciones += `<button type="button" data-trace="${s._id}" class="btn-trace">📋 Trazabilidad</button>`;
+                tr.innerHTML = `
+                    <td>${s._id || '-'}</td>
+                    <td>${s.nombre || '-'}</td>
+                    <td>${s.tipo || '-'}</td>
+                    <td>${s.direccion || '-'}</td>
+                    <td>${s.activa === false ? 'No' : 'Si'}</td>
+                    <td>${s.fechaCreacion || '-'}</td>
+                    <td>${acciones}</td>
+                `;
+                return tr;
+            }
 
-			function fila(s) {
-				const tr = document.createElement('tr');
-				tr.innerHTML = `
-					<td>${s.id || '-'}</td>
-					<td>${s.nombre || '-'}</td>
-					<td>${s.tipo || '-'}</td>
-					<td>${s.direccion || '-'}</td>
-					<td>${s.activa === false ? 'No' : 'Si'}</td>
-					<td>${s.fechaCreacion || '-'}</td>
-					<td>
-						<button type="button" data-edit="${s.id}">Editar</button>
-						<button type="button" data-off="${s.id}">Desactivar</button>
-					</td>
-				`;
-				return tr;
-			}
+            async function cargarSucursales() {
+                tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+                try {
+                    const res = await fetch('/api/sucursales', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    const data = await res.json();
+                    const list = Array.isArray(data) ? data : [];
+                    if (list.length === 0) {
+                        tabla.innerHTML = '<tr><td colspan="7">Sin sucursales</td></tr>';
+                        return;
+                    }
+                    tabla.innerHTML = '';
+                    list.forEach((s) => tabla.appendChild(fila(s)));
+                } catch {
+                    tabla.innerHTML = '<tr><td colspan="7">Error al cargar</td></tr>';
+                }
+            }
 
-			async function cargarSucursales() {
-				tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
-				try {
-					const res = await fetch('/api/sucursales');
-					const data = await res.json();
-					const list = Array.isArray(data) ? data : [];
-					if (list.length === 0) {
-						tabla.innerHTML = '<tr><td colspan="7">Sin sucursales</td></tr>';
-						return;
-					}
-					tabla.innerHTML = '';
-					list.forEach((s) => tabla.appendChild(fila(s)));
-				} catch {
-					tabla.innerHTML = '<tr><td colspan="7">Error al cargar</td></tr>';
-				}
-			}
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(form);
+                const payload = {
+                    nombre: String(fd.get('nombre') || '').trim(),
+                    tipo: String(fd.get('tipo') || ''),
+                    direccion: String(fd.get('direccion') || '').trim()
+                };
+                try {
+                    const res = await fetch('/api/sucursales', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'No se pudo crear');
+                    form.reset();
+                    setMsg('Sucursal creada');
+                    await cargarSucursales();
+                } catch (err) {
+                    setMsg(err.message, false);
+                }
+            });
 
-			form.addEventListener('submit', async (e) => {
-				e.preventDefault();
-				const fd = new FormData(form);
-				const payload = {
-					nombre: String(fd.get('nombre') || '').trim(),
-					tipo: String(fd.get('tipo') || ''),
-					direccion: String(fd.get('direccion') || '').trim()
-				};
-				try {
-					const res = await fetch('/api/sucursales', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(payload)
-					});
-					const data = await res.json();
-					if (!res.ok) throw new Error(data.error || 'No se pudo crear');
-					form.reset();
-					setMsg('Sucursal creada');
-					cargarSucursales();
-				} catch (err) {
-					setMsg(err.message, false);
-				}
-			});
+            tabla.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const idEdit = btn.getAttribute('data-edit');
+                const idOff = btn.getAttribute('data-off');
+                const idOn = btn.getAttribute('data-on');
+                const idTrace = btn.getAttribute('data-trace');
+                try {
+                    if (idEdit) {
+                        const nombre = prompt('Nuevo nombre:');
+                        const tipo = prompt('Nuevo tipo (sucursal|franquicia):');
+                        const direccion = prompt('Nueva direccion:');
+                        if (!nombre || !tipo || !direccion) return;
+                        const res = await fetch(`/api/sucursales/${idEdit}`, {
+                            method: 'PUT',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${getToken()}`
+                            },
+                            body: JSON.stringify({ nombre, tipo, direccion })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo actualizar');
+                        setMsg('Sucursal actualizada');
+                        await cargarSucursales();
+                    }
+                    if (idOff) {
+                        const ok = confirm('Desactivar sucursal?');
+                        if (!ok) return;
+                        const res = await fetch(`/api/sucursales/${idOff}`, { 
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo desactivar');
+                        setMsg('Sucursal desactivada');
+                        await cargarSucursales();
+                    }
+                    if (idOn) {
+                        const ok = confirm('Reactivar sucursal?');
+                        if (!ok) return;
+                        const res = await fetch(`/api/sucursales/${idOn}/activar`, { 
+                            method: 'PATCH',
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo reactivar');
+                        setMsg('Sucursal reactivada');
+                        await cargarSucursales();
+                    }
+                    if (idTrace) {
+                        trazContent.innerHTML = '<p>Cargando trazabilidad...</p>';
+                        trazCard.style.display = '';
+                        trazCard.scrollIntoView({ behavior: 'smooth' });
+                        const res = await fetch(`/api/sucursales/${idTrace}/trazabilidad`, {
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo cargar trazabilidad');
+                        mostrarTrazabilidad(data);
+                    }
+                } catch (err) {
+                    setMsg(err.message, false);
+                }
+            });
 
-			tabla.addEventListener('click', async (e) => {
-				const btn = e.target.closest('button');
-				if (!btn) return;
-				const idEdit = btn.getAttribute('data-edit');
-				const idOff = btn.getAttribute('data-off');
-				try {
-					if (idEdit) {
-						const nombre = prompt('Nuevo nombre:');
-						const tipo = prompt('Nuevo tipo (sucursal|franquicia):');
-						const direccion = prompt('Nueva direccion:');
-						if (!nombre || !tipo || !direccion) return;
-						const res = await fetch(`/api/sucursales/${idEdit}`, {
-							method: 'PUT',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ nombre, tipo, direccion })
-						});
-						const data = await res.json();
-						if (!res.ok) throw new Error(data.error || 'No se pudo actualizar');
-						setMsg('Sucursal actualizada');
-						await cargarSucursales();
-					}
-					if (idOff) {
-						const ok = confirm('Desactivar sucursal?');
-						if (!ok) return;
-						const res = await fetch(`/api/sucursales/${idOff}`, { method: 'DELETE' });
-						const data = await res.json();
-						if (!res.ok) throw new Error(data.error || 'No se pudo desactivar');
-						setMsg('Sucursal desactivada');
-						await cargarSucursales();
-					}
-				} catch (err) {
-					setMsg(err.message, false);
-				}
-			});
-
-			cargarSucursales();
+            cargarSucursales();

@@ -38,7 +38,7 @@ export const actualizarProducto = async (req, res, next) => {
 
 export const eliminarProducto = async (req, res, next) => {
   try {
-    await productoService.eliminar(req.params.id, req.user._id);
+    await productoService.eliminar(req.params.id, req.user._id, req.user.rol);
     res.status(200).json({ mensaje: "Producto eliminado correctamente" });
   } catch (err) {
     next(err);
@@ -47,8 +47,8 @@ export const eliminarProducto = async (req, res, next) => {
 
 export const trazabilidadProducto = async (req, res, next) => {
   try {
-    const nuevo = await productoService.obtenerTrazabilidad(req.params.id);
-    res.status(200).json(nuevo);
+    const trazabilidad = await productoService.obtenerTrazabilidad(req.params.id);
+    res.status(200).json(trazabilidad);
   } catch (err) {
     next(err);
   }

@@ -1,335 +1,358 @@
 doctype html
 html(lang="es")
-	head
-		meta(charset="UTF-8")
-		meta(name="viewport", content="width=device-width, initial-scale=1.0")
-		title Pedidos - La Espiga de Oro
-		style.
-			:root {
-				--bg: #f6f4ee;
-				--ink: #1e1a14;
-				--card: #fff;
-				--line: #ddd2c3;
-				--brand: #7b3f00;
-				--ok: #0f766e;
-				--bad: #b91c1c;
-			}
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Pedidos - La Espiga de Oro
+        link(rel="stylesheet", href="/public/styles.css")
+        script(src="/public/auth.js")
+        script.
+            document.addEventListener('DOMContentLoaded', () => {
+                if (isAdmin()) {
+                    document.querySelectorAll('.admin-link').forEach(el => el.style.display = '');
+                }
+            });
+    body
+        header.user-header
+            div.user-info
+                span Hola, 
+                span#userNameDisplay Cargando...
+            nav.nav-right
+                a(href="/sucursales") Sucursales
+                a(href="/productos") Productos
+                a(href="/pedidos") Pedidos
+                a.admin-link(href="/usuarios", style="display:none") Usuarios
+                a.btn-logout(href="#", onclick="logout()") Cerrar Sesión    
 
-			* { box-sizing: border-box; }
+        main
+            section.card
+                .head
+                    h1 Pedidos
+                    div
+                        a.btn(href="/index") Inicio
+            section.card
+                h2 Crear pedido
+                .grid
+                    div
+                        label(for="selSucursal") Sucursal
+                        select#selSucursal
+                    div
+                        label(for="obs") Observaciones
+                        input#obs(type="text", placeholder="Ej: entregar antes de las 8am")
+                h3 Productos
+                #lineas
+                button(type="button", onclick="agregarLinea()") Agregar producto
+                button(type="button", onclick="crearPedido()") Guardar pedido
+                p#msg
 
-			body {
-				margin: 0;
-				background: var(--bg);
-				color: var(--ink);
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-			}
+            section.card
+                .head
+                    h2 Lista de pedidos
+                    button(type="button", onclick="cargarPedidos()") Recargar
+                table
+                    thead
+                        tr
+                            th ID
+                            th Sucursal
+                            th Productos
+                            th Estado
+                            th Precio Total
+                            th Fecha
+                            th Acciones
+                    tbody#tablaPedidos
+            
+            section.card#trazabilidadPedidosCard(style="display:none")
+                .head
+                    h2 Trazabilidad de Pedido
+                    button(type="button", onclick="cerrarTrazabilidad()") ✕ Cerrar
+                #trazabilidadPedidosContent
 
-			main {
-				max-width: 1100px;
-				margin: 0 auto;
-				padding: 1rem;
-			}
+        script.
+            let cacheProductos = [];
 
-			.card {
-				background: var(--card);
-				border: 1px solid var(--line);
-				border-radius: 12px;
-				padding: 1rem;
-				margin-bottom: 1rem;
-			}
+            const trazCard = document.getElementById('trazabilidadPedidosCard');
+            const trazContent = document.getElementById('trazabilidadPedidosContent');
+            const selSucursal = document.getElementById('selSucursal');
+            const lineas = document.getElementById('lineas');
+            const tabla = document.getElementById('tablaPedidos');
+            const msg = document.getElementById('msg');
 
-			.head {
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				gap: .6rem;
-				flex-wrap: wrap;
-			}
+            function setMsg(texto, ok = true) {
+                msg.textContent = texto;
+                msg.className = ok ? 'estado-ok' : 'estado-bad';
+            }
 
-			button, .btn {
-				border: 0;
-				border-radius: 8px;
-				padding: .55rem .85rem;
-				font-weight: 700;
-				background: var(--brand);
-				color: #fff;
-				cursor: pointer;
-				text-decoration: none;
-			}
+            function formatearFecha(fecha) {
+                if (!fecha) return '-';
+                return new Date(fecha).toLocaleString('es-AR');
+            }
 
-			select, input {
-				width: 100%;
-				padding: .6rem;
-				border: 1px solid #cabfac;
-				border-radius: 8px;
-			}
+            function formatearPrecio(precio) {
+                if (precio === undefined || precio === null) return '-';
+                return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(precio);
+            }
 
-			.grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-				gap: .7rem;
-			}
+            function estadoLabel(e) {
+                const map = {
+                    pendiente: '⏳ Pendiente',
+                    en_produccion: '🏭 En producción',
+                    despachado: '🚚 Despachado',
+                    entregado: '✅ Entregado'
+                };
+                return map[e] || e;
+            }
 
-			.linea {
-				display: grid;
-				grid-template-columns: 2fr 1fr auto;
-				gap: .5rem;
-				margin-bottom: .5rem;
-			}
+            
 
-			table {
-				width: 100%;
-				border-collapse: collapse;
-			}
+            function normalizarProductosPedido(pedido) {
+                if (!Array.isArray(pedido.productos)) return [];
+                return pedido.productos.map((item) => {
+                    if (item && item.productoId && typeof item.productoId === 'object') {
+                        return {
+                            id: item.productoId._id || item.productoId.id,
+                            nombre: item.productoId.nombre,
+                            cantidad: item.cantidad,
+                            precio: item.productoId.precio
+                        };
+                    }
+                    return {
+                        id: item.productoId || item.id,
+                        nombre: item.nombre,
+                        cantidad: item.cantidad,
+                        precio: item.precio
+                    };
+                });
+            }
 
-			th, td {
-				border-bottom: 1px solid #eee5d8;
-				text-align: left;
-				vertical-align: top;
-				padding: .55rem;
-			}
+            function plantillaLinea() {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'linea';
+                const options = cacheProductos.map((p) => `<option value="${p._id || p.id}">${p.nombre}</option>`).join('');
+                wrapper.innerHTML = `
+                    <select class="prod-id">${options}</select>
+                    <input class="prod-cant" type="number" min="1" value="1" />
+                    <button type="button" class="rm">Quitar</button>
+                `;
+                wrapper.querySelector('.rm').addEventListener('click', () => wrapper.remove());
+                return wrapper;
+            }
 
-			.estado-ok { color: var(--ok); }
-			.estado-bad { color: var(--bad); }
-			.mini-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
-			.mini-actions button:nth-child(2) { background: #9a3412; }
-			.mini-actions button:nth-child(3) { background: #b91c1c; }
-	body
-		main
-			section.card
-				.head
-					h1 Pedidos
-					div
-						a.btn(href="/index") Inicio
-			section.card
-				h2 Crear pedido
-				.grid
-					div
-						label(for="selSucursal") Sucursal
-						select#selSucursal
-					div
-						label(for="obs") Observaciones
-						input#obs(type="text", placeholder="Ej: entregar antes de las 8am")
-				h3 Productos
-				#lineas
-				button(type="button", onclick="agregarLinea()") Agregar producto
-				button(type="button", onclick="crearPedido()") Guardar pedido
-				p#msg
+            function agregarLinea() {
+                lineas.appendChild(plantillaLinea());
+            }
 
-			section.card
-				.head
-					h2 Lista de pedidos
-					button(type="button", onclick="cargarPedidos()") Recargar
-				table
-					thead
-						tr
-							th ID
-							th Sucursal
-							th Productos
-							th Estado
-							th Fecha
-							th Acciones
-					tbody#tablaPedidos
+            async function cargarBase() {
+                const [resSuc, resProd] = await Promise.all([
+                    fetch('/api/sucursales', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    }),
+                    fetch('/api/productos', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    })
+                ]);
 
-		script.
-			let cacheProductos = [];
+                const suc = await resSuc.json();
+                const prod = await resProd.json();
 
-			const selSucursal = document.getElementById('selSucursal');
-			const lineas = document.getElementById('lineas');
-			const tabla = document.getElementById('tablaPedidos');
-			const msg = document.getElementById('msg');
+                const sucursales = Array.isArray(suc) ? suc : [];
+                cacheProductos = Array.isArray(prod) ? prod : [];
 
-			function setMsg(texto, ok = true) {
-				msg.textContent = texto;
-				msg.className = ok ? 'estado-ok' : 'estado-bad';
-			}
+                selSucursal.innerHTML = sucursales
+                    .filter((s) => s.activa !== false)
+                    .map((s) => `<option value="${s._id || s.id}">${s.nombre} (${s.tipo})</option>`)
+                    .join('');
 
-			function normalizarProductosPedido(pedido) {
-				if (!Array.isArray(pedido.productos)) return [];
-				return pedido.productos.map((item) => {
-					if (item && item.productoId && typeof item.productoId === 'object') {
-						return {
-							id: item.productoId.id,
-							nombre: item.productoId.nombre,
-							cantidad: item.cantidad,
-							precio: item.productoId.precio
-						};
-					}
-					return {
-						id: item.productoId || item.id,
-						nombre: item.nombre,
-						cantidad: item.cantidad,
-						precio: item.precio
-					};
-				});
-			}
+                lineas.innerHTML = '';
+                agregarLinea();
+            }
 
-			function plantillaLinea() {
-				const wrapper = document.createElement('div');
-				wrapper.className = 'linea';
-				const options = cacheProductos.map((p) => `<option value="${p.id}">${p.nombre}</option>`).join('');
-				wrapper.innerHTML = `
-					<select class="prod-id">${options}</select>
-					<input class="prod-cant" type="number" min="1" value="1" />
-					<button type="button" class="rm">Quitar</button>
-				`;
-				wrapper.querySelector('.rm').addEventListener('click', () => wrapper.remove());
-				return wrapper;
-			}
+            async function crearPedido() {
+                try {
+                    const sucursalId = selSucursal.value;
+                    const observaciones = document.getElementById('obs').value.trim();
+                    const productos = Array.from(lineas.querySelectorAll('.linea')).map((el) => ({
+                        productoId: el.querySelector('.prod-id').value,
+                        cantidad: Number(el.querySelector('.prod-cant').value)
+                    })).filter((p) => p.productoId && p.cantidad > 0);
 
-			function agregarLinea() {
-				lineas.appendChild(plantillaLinea());
-			}
+                    const res = await fetch('/api/pedidos', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}` 
+                        },
+                        body: JSON.stringify({ sucursalId, productos, observaciones })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'No se pudo crear pedido');
 
-			async function cargarBase() {
-				const [resSuc, resProd] = await Promise.all([
-					fetch('/api/sucursales'),
-					fetch('/api/productos')
-				]);
+                    setMsg('Pedido creado correctamente');
+                    document.getElementById('obs').value = '';
+                    lineas.innerHTML = '';
+                    agregarLinea();
+                    cargarPedidos();
+                } catch (err) {
+                    setMsg(err.message, false);
+                }
+            }
 
-				const suc = await resSuc.json();
-				const prod = await resProd.json();
+            function htmlProductos(items) {
+                return items.map((p) => `${p.nombre || p.id} x${p.cantidad}`).join('<br/>');
+            }
 
-				const sucursales = Array.isArray(suc) ? suc : [];
-				cacheProductos = Array.isArray(prod) ? prod : [];
+            function filaPedido(p) {
+                const tr = document.createElement('tr');
+                const suc = p.sucursal && typeof p.sucursal === 'object'
+                    ? p.sucursal.nombre
+                    : p.sucursalId || '-';
+                const productos = normalizarProductosPedido(p);
+                tr.innerHTML = `
+                    <td>${p._id || '-'}</td>
+                    <td>${suc}</td>
+                    <td>${htmlProductos(productos)}</td>
+                    <td>${p.estado || '-'}</td>
+                    <td>${formatearPrecio(p.precioTotal)}</td>
+                    <td>${p.fechaActualizacion || p.fechaPedido || '-'}</td>
+                    <td>
+                        <div class="mini-actions">
+                            <button type="button" data-next="${p._id}">Avanzar estado</button>
+                            <button type="button" data-trace="${p._id}" class="btn-trace">📋 Trazabilidad</button>
+                            <button type="button" data-cancel="${p._id}">Cancelar</button>
+                        </div>
+                    </td>
+                `;
+                return tr;
+            }
 
-				selSucursal.innerHTML = sucursales
-					.filter((s) => s.activa !== false)
-					.map((s) => `<option value="${s.id}">${s.nombre} (${s.tipo})</option>`)
-					.join('');
+            async function cargarPedidos() {
+                tabla.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+                try {
+                    const res = await fetch('/api/pedidos', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    const data = await res.json();
+                    const pedidos = Array.isArray(data) ? data : [];
+                    if (pedidos.length === 0) {
+                        tabla.innerHTML = '<tr><td colspan="7">Sin pedidos</td></tr>';
+                        return;
+                    }
+                    tabla.innerHTML = '';
+                    pedidos.forEach((p) => tabla.appendChild(filaPedido(p)));
+                } catch {
+                    tabla.innerHTML = '<tr><td colspan="7">Error de carga</td></tr>';
+                }
+            }
 
-				lineas.innerHTML = '';
-				agregarLinea();
-			}
+            function siguienteEstado(actual) {
+                if (actual === 'pendiente') return 'en_produccion';
+                if (actual === 'en_produccion') return 'despachado';
+                if (actual === 'despachado') return 'entregado';
+                return null;
+            }
 
-			async function crearPedido() {
-				try {
-					const sucursalId = selSucursal.value;
-					const observaciones = document.getElementById('obs').value.trim();
-					const productos = Array.from(lineas.querySelectorAll('.linea')).map((el) => ({
-						productoId: el.querySelector('.prod-id').value,
-						cantidad: Number(el.querySelector('.prod-cant').value)
-					})).filter((p) => p.productoId && p.cantidad > 0);
+            async function avanzarEstado(id) {
+                const resPedido = await fetch(`/api/pedidos/${id}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const pedido = await resPedido.json();
+                if (!resPedido.ok) throw new Error(pedido.error || 'Pedido no encontrado');
 
-					const res = await fetch('/api/pedidos', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ sucursalId, productos, observaciones })
-					});
-					const data = await res.json();
-					if (!res.ok) throw new Error(data.error || 'No se pudo crear pedido');
+                const next = siguienteEstado(pedido.estado);
+                if (!next) throw new Error('El pedido no tiene siguiente estado');
 
-					setMsg('Pedido creado correctamente');
-					document.getElementById('obs').value = '';
-					lineas.innerHTML = '';
-					agregarLinea();
-					cargarPedidos();
-				} catch (err) {
-					setMsg(err.message, false);
-				}
-			}
+                const res = await fetch(`/api/pedidos/${id}/estado`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ estado: next })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'No se pudo avanzar');
+            }
 
-			function htmlProductos(items) {
-				return items.map((p) => `${p.nombre || p.id} x${p.cantidad}`).join('<br/>');
-			}
+            async function cancelarPedido(id) {
+                const ok = confirm('Cancelar pedido? Solo aplica a pendientes.');
+                if (!ok) return;
+                const res = await fetch(`/api/pedidos/${id}`, { 
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` },
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+            }
 
-			function filaPedido(p) {
-				const tr = document.createElement('tr');
-				const suc = p.sucursal && typeof p.sucursal === 'object'
-					? p.sucursal.nombre
-					: p.sucursalId || '-';
-				const productos = normalizarProductosPedido(p);
-				tr.innerHTML = `
-					<td>${p.id || '-'}</td>
-					<td>${suc}</td>
-					<td>${htmlProductos(productos)}</td>
-					<td>${p.estado || '-'}</td>
-					<td>${p.fechaActualizacion || p.fechaPedido || '-'}</td>
-					<td>
-						<div class="mini-actions">
-							<button type="button" data-next="${p.id}">Avanzar estado</button>
-							<button type="button" data-cancel="${p.id}">Cancelar</button>
-						</div>
-					</td>
-				`;
-				return tr;
-			}
+            function cerrarTrazabilidad() {
+                trazCard.style.display = 'none';
+            }
 
-			async function cargarPedidos() {
-				tabla.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
-				try {
-					const res = await fetch('/api/pedidos');
-					const data = await res.json();
-					const pedidos = Array.isArray(data) ? data : [];
-					if (pedidos.length === 0) {
-						tabla.innerHTML = '<tr><td colspan="6">Sin pedidos</td></tr>';
-						return;
-					}
-					tabla.innerHTML = '';
-					pedidos.forEach((p) => tabla.appendChild(filaPedido(p)));
-				} catch {
-					tabla.innerHTML = '<tr><td colspan="6">Error de carga</td></tr>';
-				}
-			}
+            function mostrarTrazabilidad(data) {
+                let html = `
+                    <p><strong>Pedido ID:</strong> ${data._id}</p>
+                    <p><strong>Creado por:</strong> ${data.creadoPor.nombre} (${data.creadoPor.email}) el ${formatearFecha(data.fechaPedido)}</p>
+                    <p><strong>Sucursal:</strong> ${data.sucursal.nombre}</p>
+                    <hr>
+                    <h3>Historial de Estados</h3>
+                `;
 
-			function siguienteEstado(actual) {
-				if (actual === 'pendiente') return 'en_produccion';
-				if (actual === 'en_produccion') return 'despachado';
-				if (actual === 'despachado') return 'entregado';
-				return null;
-			}
+                if (data.historialEstados && data.historialEstados.length > 0) {
+                    html += '<table><thead><tr><th>Estado</th><th>Usuario</th><th>Fecha</th></tr></thead><tbody>';
+                    data.historialEstados.forEach(h => {
+                        html += `<tr>
+                            <td>${estadoLabel(h.estado)}</td>
+                            <td>${h.usuarioId.nombre} (${h.usuarioId.email})</td>
+                            <td>${formatearFecha(h.fecha)}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p><em>Sin historial de estados disponible.</em></p>';
+                }
 
-			async function avanzarEstado(id) {
-				const resPedido = await fetch(`/api/pedidos/${id}`);
-				const pedido = await resPedido.json();
-				if (!resPedido.ok) throw new Error(pedido.error || 'Pedido no encontrado');
+                trazContent.innerHTML = html;
+                trazCard.style.display = '';
+                trazCard.scrollIntoView({ behavior: 'smooth' });
+            }
 
-				const next = siguienteEstado(pedido.estado);
-				if (!next) throw new Error('El pedido no tiene siguiente estado');
+            tabla.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const idNext = btn.getAttribute('data-next');
+                const idCancel = btn.getAttribute('data-cancel');
+                const idTrace = btn.getAttribute('data-trace');
+                try {
+                    if (idNext) {
+                        await avanzarEstado(idNext);
+                        setMsg('Estado actualizado');
+                        await cargarPedidos();
+                    }
+                    if (idCancel) {
+                        await cancelarPedido(idCancel);
+                        setMsg('Pedido cancelado');
+                        await cargarPedidos();
+                    }
+                    if (idTrace) {
+                        trazContent.innerHTML = '<p>Cargando trazabilidad...</p>';
+                        trazCard.style.display = '';
+                        trazCard.scrollIntoView({ behavior: 'smooth' });
+                        const res = await fetch(`/api/pedidos/${idTrace}/trazabilidad`, {
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'No se pudo cargar trazabilidad');
+                        mostrarTrazabilidad(data);
+                    }
+                } catch (err) {
+                    setMsg(err.message, false);
+                }
+            });
 
-				const res = await fetch(`/api/pedidos/${id}/estado`, {
-					method: 'PATCH',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ estado: next })
-				});
-				const data = await res.json();
-				if (!res.ok) throw new Error(data.error || 'No se pudo avanzar');
-			}
-
-			async function cancelarPedido(id) {
-				const ok = confirm('Cancelar pedido? Solo aplica a pendientes.');
-				if (!ok) return;
-				const res = await fetch(`/api/pedidos/${id}`, { method: 'DELETE' });
-				const data = await res.json();
-				if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
-			}
-
-			tabla.addEventListener('click', async (e) => {
-				const btn = e.target.closest('button');
-				if (!btn) return;
-				const idNext = btn.getAttribute('data-next');
-				const idCancel = btn.getAttribute('data-cancel');
-				try {
-					if (idNext) {
-						await avanzarEstado(idNext);
-						setMsg('Estado actualizado');
-						await cargarPedidos();
-					}
-					if (idCancel) {
-						await cancelarPedido(idCancel);
-						setMsg('Pedido cancelado');
-						await cargarPedidos();
-					}
-				} catch (err) {
-					setMsg(err.message, false);
-				}
-			});
-
-			(async function init() {
-				try {
-					await cargarBase();
-					await cargarPedidos();
-				} catch (err) {
-					setMsg('No se pudieron cargar datos base', false);
-				}
-			})();
+            (async function init() {
+                try {
+                    await cargarBase();
+                    await cargarPedidos();
+                } catch (err) {
+                    setMsg('No se pudieron cargar datos base', false);
+                }
+            })();

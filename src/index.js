@@ -26,6 +26,9 @@ app.set('views', path.join(__dirname, 'view'));
 // Middleware para parsear JSON
 app.use(express.json());
 
+// Servir archivos estáticos desde la carpeta public
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Registrar los 3 routers bajo /api
 app.use('/api/auth', authRoutes);
 app.use('/api/sucursales', verifyToken,  sucursalRoutes);
@@ -43,7 +46,11 @@ app.get('/api/health', (req, res) => {
 
 // Rutas de vistas (opcional, para el frontend)
 app.get('/', function (req, res) {
-    res.render('index');
+    res.redirect('/index'); 
+});
+
+app.get('/login', function (req, res) {
+    res.render('login');    
 });
 
 app.get('/index', function (req, res) {
@@ -62,6 +69,11 @@ app.get('/productos', function (req, res) {
     res.render('productos');
 });
 
+app.get('/usuarios', function (req, res) {
+    res.render('usuarios');
+});
+
+
 // Middleware global de manejo de errores (siempre al final)
 app.use(errorHandler);
 
@@ -78,3 +90,4 @@ start().catch((err) => {
   console.error('Error al iniciar el servidor:', err.message);
   process.exit(1);
 });
+

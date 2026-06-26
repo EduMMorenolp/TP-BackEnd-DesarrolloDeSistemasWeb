@@ -1,0 +1,298 @@
+:root {
+  --bg: #F2E9E9;
+  --ink: #2d2d2d;
+  --card: #ffffff;
+  --line: #d9d2c5;
+  --brand: #733F2D;
+  --brand-2: #40281F;
+  --ok: #04422a;
+  --bad: #c0392b;
+  --warn: #d68910;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.login-card {
+  background: var(--card);
+  padding: 40px 30px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 25px rgba(139, 94, 60, 0.05);
+  text-align: center;
+}
+
+.login-card h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--brand-2);
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  margin-bottom: 32px;
+  color: --ink;
+  font-size: 0.95rem;
+}
+.user-header {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;            
+    padding: 15px 30px;
+    background-color: --bg;      
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
+    }
+    .user-info {
+    font-size: 16px;
+    font-weight: 500;
+    color: --ink;
+}
+
+#userNameDisplay {
+    font-weight: 700;
+    color: #111111;
+}
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+.nav-right a {
+    text-decoration: none;
+    color: #555555;
+    font-size: 15px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+.nav-right a:hover {
+    color: #000000;
+}
+.nav-right .btn-logout {
+    color: --bad;
+    font-weight: 600;
+}
+.nav-right .btn-logout:hover {
+    color: --bad;
+}
+.hero {
+  padding: 3.5rem 1rem;  
+  text-align: center;
+}
+.hero h1 {
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  color: var(--brand-2);
+}
+.card h2, h3 {
+  margin-bottom: 0.8rem; 
+  color: var(--brand-2); 
+}
+.card p {
+  margin-bottom: 1.5rem;    
+  font-size: 0.95rem;       
+  color: #555555;           
+  line-height: 1.4;        
+  text-align: center;       
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-top: 1.2rem;  
+  text-align: center;
+}
+.card .actions {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .7rem;
+  margin: 10px;
+}
+.grid div {
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+.grid label {
+  display: block;
+  margin-bottom: 12px;
+}
+.linea {				
+    display: grid;
+	grid-template-columns: 2fr 1fr auto;
+	gap: .7rem;
+	margin: 1rem;                
+}
+.top,.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--brand-2);
+}
+
+input, select {
+  width: 100%;
+  padding: .8rem 1rem;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 1rem;
+  color: var(--ink);
+  background-color:  --bg;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--brand);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+}
+
+button, .btn, .link-btn {
+  border: none;
+  border-radius: 8px;
+  margin: 10px;
+  padding: .9rem 1.2rem;
+  background: var(--brand);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+button:hover,
+.btn:hover,
+.link-btn:hover {
+  background: var(--brand-2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 94, 60, 0.2);
+}
+
+button:active, .btn:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--brand-2);
+}
+
+.btn-block {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: .5rem
+  }
+
+  table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 30px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+
+tr {
+  border-bottom: 1px solid var(--line); 
+}
+.estado-ok { 
+    color: var(--ok); }
+	.estado-bad { color: var(--bad); }
+	.mini-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+	.mini-actions button:nth-child(2) { background: #9a3412; }
+	.mini-actions button:nth-child(3) { background: #b91c1c; }
+
+  .foot {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* --- Trazabilidad --- */
+.btn-trace {
+  background: #4f46e5;
+}
+.btn-trace:hover {
+  background: #4338ca;
+}
+.trazabilidad-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.trazabilidad-grid h3 {
+  margin: 0 0 0.8rem 0;
+}
+.trazabilidad-grid table {
+  margin-top: 0.5rem;
+}
+.trazabilidad-grid p {
+  margin: 0.5rem 0;
+}
+#trazabilidadCard {
+  margin-top: 1.5rem;
+}
