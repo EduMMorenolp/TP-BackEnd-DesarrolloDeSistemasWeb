@@ -11,6 +11,10 @@ html(lang="es")
                 if (isAdmin()) {
                     document.querySelectorAll('.admin-link').forEach(el => el.style.display = '');
                 }
+                if (!canManageProductos()) {
+                    const altaCard = document.getElementById('altaProductoCard');
+                    if (altaCard) altaCard.style.display = 'none';
+                }
             });
         
     body
@@ -33,7 +37,7 @@ html(lang="es")
                     h1 Productos        
                     
 
-            section.card
+            section.card#altaProductoCard
                 h2 Alta rapida
                 p.muted Crea productos desde esta pantalla. Tambien puedes editar o eliminar filas existentes.
                 form#productoForm
@@ -83,6 +87,16 @@ html(lang="es")
 
             function filaProducto(p) {
                 const tr = document.createElement('tr');
+                const puedeAcciones = canManageProductos();
+                let acciones = '';
+                if (puedeAcciones) {
+                    acciones += `<div class="actions">`;
+                    acciones += `<button type="button" data-edit="${p._id}">Editar</button>`;
+                    acciones += `<button type="button" data-del="${p._id}">Eliminar</button>`;
+                    acciones += `</div>`;
+                } else {
+                    acciones = '<span class="muted">—</span>';
+                }
                 tr.innerHTML = `
                     <td>${p._id || '-'}</td>
                     <td>${p.nombre || '-'}</td>
@@ -90,12 +104,7 @@ html(lang="es")
                     <td>${fmtPrecio(p.precio)}</td>
                     <td>${p.categoria || '-'}</td>
                     <td>${p.disponible === false ? 'No' : 'Si'}</td>
-                    <td>
-                        <div class="actions">
-                            <button type="button" data-edit="${p._id}">Editar</button>
-                            <button type="button" data-del="${p._id}">Eliminar</button>
-                        </div>
-                    </td>
+                    <td>${acciones}</td>
                 `;
                 return tr;
             }

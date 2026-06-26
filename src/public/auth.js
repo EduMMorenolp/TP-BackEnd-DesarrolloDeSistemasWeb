@@ -16,6 +16,24 @@ function isAdmin() {
     return user && user.rol === 'ADMIN';
 }
 
+function getUserRole() {
+    const user = getUserInfo();
+    return user ? user.rol : null;
+}
+
+// ADMIN y PLANTA pueden crear sucursales; FRANQUICIA y SUCURSAL no
+function canManageSucursales() {
+    const rol = getUserRole();
+    return rol === 'ADMIN' || rol === 'PLANTA';
+}
+
+// ADMIN y PLANTA administran el catalogo de productos;
+// FRANQUICIA y SUCURSAL solo ven el catalogo para hacer pedidos
+function canManageProductos() {
+    const rol = getUserRole();
+    return rol === 'ADMIN' || rol === 'PLANTA';
+}
+
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
