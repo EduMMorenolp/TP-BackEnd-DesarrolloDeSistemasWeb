@@ -1,0 +1,295 @@
+doctype html
+html(lang="es")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Usuarios - La Espiga de Oro
+        link(rel="stylesheet", href="/public/styles.css")
+        script(src="/public/auth.js")
+    body
+        header.user-header
+            div.user-info
+                span Hola, 
+                span#userNameDisplay Cargando...
+            nav.nav-right
+                a(href="/sucursales") Sucursales
+                a(href="/productos") Productos
+                a(href="/pedidos") Pedidos
+                a(href="/usuarios") Usuarios
+                a.btn-logout(href="#", onclick="logout()") Cerrar Sesión
+
+        main
+            section.card
+                .head
+                    h1 Usuarios
+                    div
+                        a.btn(href="/index") Inicio
+
+            section.card
+                h2 Alta de usuario
+                form#formUsuario.grid
+                    input(type="text", name="nombre", placeholder="Nombre", required=true)
+                    input(type="email", name="email", placeholder="Email", required=true)
+                    input(type="password", name="password", placeholder="Contraseña", required=true)
+                    select(name="rol", required=true)
+                        option(value="") -- Seleccionar rol --
+                        option(value="ADMIN") ADMIN
+                        option(value="PLANTA") PLANTA
+                        option(value="SUCURSAL") SUCURSAL
+                        option(value="FRANQUICIA") FRANQUICIA
+                    select(name="sucursalId")
+                        option(value="") -- Sin sucursal --
+                    button(type="submit") Crear
+                p#msg
+
+            section.card
+                .head
+                    h2 Listado de usuarios
+                    button(type="button", onclick="cargarUsuarios()") Recargar
+                table
+                    thead
+                        tr
+                            th ID
+                            th Nombre
+                            th Email
+                            th Rol
+                            th Sucursal
+                            th Activo
+                            th Fecha
+                            th Acciones
+                    tbody#tablaUsuarios
+
+        script.
+            if (!isAdmin()) {
+                window.location.href = '/index';
+            }
+
+            const form = document.getElementById('formUsuario');
+            const tabla = document.getElementById('tablaUsuarios');
+            const msg = document.getElementById('msg');
+            const selRol = form.querySelector('[name="rol"]');
+            const selSucursal = form.querySelector('[name="sucursalId"]');
+
+            let cacheSucursales = [];
+
+            function setMsg(texto, ok = true) {
+                msg.textContent = texto;
+                msg.className = ok ? 'estado-ok' : 'estado-bad';
+            }
+
+            function rolLabel(rol) {
+                const map = { ADMIN: 'Admin', PLANTA: 'Planta', SUCURSAL: 'Sucursal', FRANQUICIA: 'Franquicia' };
+                return map[rol] || rol;
+            }
+
+            function filaUsuario(u) {
+                const tr = document.createElement('tr');
+                const sucursal = u.sucursalId && typeof u.sucursalId === 'object' ? u.sucursalId.nombre : '-';
+                tr.innerHTML = `
+                    <td>${u.id || u._id || '-'}</td>
+                    <td>${u.nombre || '-'}</td>
+                    <td>${u.email || '-'}</td>
+                    <td>${rolLabel(u.rol)}</td>
+                    <td>${sucursal}</td>
+                    <td>${u.activo === false ? 'No' : 'Si'}</td>
+                    <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <button type="button" data-edit="${u.id || u._id}">Editar</button>
+                        <button type="button" data-toggle="${u.id || u._id}" data-activo="${u.activo}">${u.activo === false ? 'Reactivar' : 'Desactivar'}</button>
+                    </td>
+                `;
+                return tr;
+            }
+
+            function cargarSucursalesSelect(selectEl, selectedId) {
+                selectEl.innerHTML = '<option value="">-- Sin sucursal --</option>';
+                cacheSucursales
+                    .filter((s) => s.activa !== false)
+                    .forEach((s) => {
+                        const opt = document.createElement('option');
+                        opt.value = s._id || s.id;
+                        opt.textContent = s.nombre;
+                        if (selectedId && (s._id === selectedId || s.id === selectedId)) {
+                            opt.selected = true;
+                        }
+                        selectEl.appendChild(opt);
+                    });
+            }
+
+            async function cargarUsuarios() {
+                tabla.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+                try {
+                    const res = await fetch('/api/usuarios', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    const data = await res.json();
+                    const list = Array.isArray(data) ? data : [];
+                    if (list.length === 0) {
+                        tabla.innerHTML = '<tr><td colspan="8">Sin usuarios</td></tr>';
+                        return;
+                    }
+                    tabla.innerHTML = '';
+                    list.forEach((u) => tabla.appendChild(filaUsuario(u)));
+                } catch {
+                    tabla.innerHTML = '<tr><td colspan="8">Error al cargar</td></tr>';
+                }
+            }
+
+            async function cargarBase() {
+                try {
+                    const res = await fetch('/api/sucursales', {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    const data = await res.json();
+                    cacheSucursales = Array.isArray(data) ? data : [];
+                    cargarSucursalesSelect(selSucursal);
+                } catch {
+                    setMsg('No se pudieron cargar sucursales', false);
+                }
+            }
+
+            selRol.addEventListener('change', function () {
+                const val = this.value;
+                if (val === 'SUCURSAL' || val === 'FRANQUICIA') {
+                    selSucursal.required = true;
+                    selSucursal.style.display = 'block';
+                } else {
+                    selSucursal.required = false;
+                    selSucursal.value = '';
+                    selSucursal.style.display = val === '' ? 'block' : 'none';
+                }
+            });
+            selRol.dispatchEvent(new Event('change'));
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(form);
+                const payload = {
+                    nombre: String(fd.get('nombre') || '').trim(),
+                    email: String(fd.get('email') || '').trim(),
+                    password: String(fd.get('password') || ''),
+                    rol: String(fd.get('rol') || ''),
+                    sucursalId: String(fd.get('sucursalId') || '')
+                };
+                if (!payload.nombre || !payload.email || !payload.password || !payload.rol) {
+                    setMsg('Completá todos los campos requeridos', false);
+                    return;
+                }
+                if ((payload.rol === 'SUCURSAL' || payload.rol === 'FRANQUICIA') && !payload.sucursalId) {
+                    setMsg('Este rol requiere seleccionar una sucursal', false);
+                    return;
+                }
+                if (!payload.sucursalId) delete payload.sucursalId;
+                try {
+                    const res = await fetch('/api/usuarios', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'No se pudo crear');
+                    form.reset();
+                    selRol.dispatchEvent(new Event('change'));
+                    setMsg('Usuario creado correctamente');
+                    await cargarUsuarios();
+                } catch (err) {
+                    setMsg(err.message, false);
+                }
+            });
+
+            tabla.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const idEdit = btn.getAttribute('data-edit');
+                const idOff = btn.getAttribute('data-toggle');
+                try {
+                    if (idEdit) {
+                        const resUsuario = await fetch(`/api/usuarios/${idEdit}`, {
+                            headers: { 'Authorization': `Bearer ${getToken()}` }
+                        });
+                        const usuario = await resUsuario.json();
+                        if (!resUsuario.ok) throw new Error(usuario.message || 'Usuario no encontrado');
+
+                        const nombre = prompt('Nuevo nombre:', usuario.nombre || '');
+                        if (!nombre) return;
+
+                        const email = prompt('Nuevo email:', usuario.email || '');
+                        if (!email) return;
+
+                        const rol = prompt('Nuevo rol (ADMIN, PLANTA, SUCURSAL, FRANQUICIA):', usuario.rol || '');
+                        if (!rol || !['ADMIN', 'PLANTA', 'SUCURSAL', 'FRANQUICIA'].includes(rol)) {
+                            setMsg('Rol inválido', false);
+                            return;
+                        }
+
+                        let sucursalId = usuario.sucursalId && typeof usuario.sucursalId === 'object'
+                            ? (usuario.sucursalId._id || usuario.sucursalId.id)
+                            : (usuario.sucursalId || '');
+                        if (rol === 'SUCURSAL' || rol === 'FRANQUICIA') {
+                            const sucInput = prompt('ID de sucursal (dejalo vacío para mantener el actual):', sucursalId || '');
+                            if (sucInput) sucursalId = sucInput;
+                        } else {
+                            sucursalId = '';
+                        }
+
+                        const password = prompt('Nueva contraseña (dejá vacío para no cambiar):', '');
+
+                        const payload = { nombre, email, rol };
+                        if (sucursalId) payload.sucursalId = sucursalId;
+                        else payload.sucursalId = null;
+                        if (password) payload.password = password;
+
+                        const res = await fetch(`/api/usuarios/${idEdit}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${getToken()}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.message || 'No se pudo actualizar');
+                        setMsg('Usuario actualizado');
+                        await cargarUsuarios();
+                    }
+                    if (idOff) {
+                        const activo = btn.getAttribute('data-activo') !== 'false';
+                        if (activo) {
+                            const ok = confirm('Desactivar usuario?');
+                            if (!ok) return;
+                            const res = await fetch(`/api/usuarios/${idOff}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${getToken()}` }
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.message || 'No se pudo desactivar');
+                            setMsg('Usuario desactivado');
+                        } else {
+                            const ok = confirm('Reactivar usuario?');
+                            if (!ok) return;
+                            const res = await fetch(`/api/usuarios/${idOff}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${getToken()}`
+                                },
+                                body: JSON.stringify({ activo: true })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.message || 'No se pudo reactivar');
+                            setMsg('Usuario reactivado');
+                        }
+                        await cargarUsuarios();
+                    }
+                } catch (err) {
+                    setMsg(err.message, false);
+                }
+            });
+
+            (async function init() {
+                await cargarBase();
+                await cargarUsuarios();
+            })();

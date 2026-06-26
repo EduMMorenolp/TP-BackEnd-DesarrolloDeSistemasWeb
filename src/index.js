@@ -4,10 +4,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { connectDB } from './config/db.js';
-import sucursalRoutes from './sucursales/sucursal.routes.js';
-import productoRoutes from './productos/producto.routes.js';
-import pedidoRoutes from './pedidos/pedido.routes.js';
+import sucursalRoutes from './modules/sucursales/sucursal.routes.js';
+import productoRoutes from './modules/productos/producto.routes.js';
+import pedidoRoutes from './modules/pedidos/pedido.routes.js';
+import usuarioRoutes from './modules/usuarios/usuario.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 import errorHandler from './shared/errorHandler.js';
+import { seedDatabase } from './config/seed.js';
+import { verifyToken } from './shared/middlewares/auth.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,10 +26,15 @@ app.set('views', path.join(__dirname, 'view'));
 // Middleware para parsear JSON
 app.use(express.json());
 
+// Servir archivos estáticos desde la carpeta public
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Registrar los 3 routers bajo /api
-app.use('/api/sucursales', sucursalRoutes);
-app.use('/api/productos', productoRoutes);
-app.use('/api/pedidos', pedidoRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/sucursales', verifyToken,  sucursalRoutes);
+app.use('/api/productos',verifyToken, productoRoutes);
+app.use('/api/pedidos', verifyToken, pedidoRoutes);
+app.use('/api/usuarios', verifyToken, usuarioRoutes);
 
 // Endpoint de health check
 app.get('/api/health', (req, res) => {
@@ -37,7 +46,11 @@ app.get('/api/health', (req, res) => {
 
 // Rutas de vistas (opcional, para el frontend)
 app.get('/', function (req, res) {
-    res.render('index');
+    res.redirect('/index'); 
+});
+
+app.get('/login', function (req, res) {
+    res.render('login');    
 });
 
 app.get('/index', function (req, res) {
@@ -56,12 +69,18 @@ app.get('/productos', function (req, res) {
     res.render('productos');
 });
 
+app.get('/usuarios', function (req, res) {
+    res.render('usuarios');
+});
+
+
 // Middleware global de manejo de errores (siempre al final)
 app.use(errorHandler);
 
 // Conectar a MongoDB y luego iniciar el servidor
 async function start() {
   await connectDB();
+  await seedDatabase();
   app.listen(PORT, () => {
     console.log(`Servidor La Espiga de Oro corriendo en http://localhost:${PORT}`);
   });
@@ -71,3 +90,4 @@ start().catch((err) => {
   console.error('Error al iniciar el servidor:', err.message);
   process.exit(1);
 });
+
