@@ -271,3 +271,28 @@ tr {
   left: 50%;
   transform: translateX(-50%);
 }
+
+/* --- Trazabilidad --- */
+.btn-trace {
+  background: #4f46e5;
+}
+.btn-trace:hover {
+  background: #4338ca;
+}
+.trazabilidad-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.trazabilidad-grid h3 {
+  margin: 0 0 0.8rem 0;
+}
+.trazabilidad-grid table {
+  margin-top: 0.5rem;
+}
+.trazabilidad-grid p {
+  margin: 0.5rem 0;
+}
+#trazabilidadCard {
+  margin-top: 1.5rem;
+}

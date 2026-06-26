@@ -1,5 +1,105 @@
 # Changelog
 
+## Seguridad + UX por rol en Sucursales y Productos (2026-06-20)
+
+**Asistido por IA** (OpenCode + Engram Memory)
+
+### Resumen
+
+Cuatro mejoras de seguridad y UX sobre el módulo Sucursales, alineando la app con el modelo de negocio: PLANTA administra todo, FRANQUICIA solo su local, SUCURSAL es read-only. Se corrigió un bug de seguridad crítico en `permitOwnerOr` (los roles listados pasaban directo sin verificar propiedad), se unificaron los timestamps de Sucursal con el patrón de Pedido, se filtró el listado por propiedad, y se bloqueó el CRUD de productos para FRANQUICIA/SUCURSAL.
+
+### Cambios
+
+#### 1. Fix de seguridad: `permitOwnerOr` verificaba propiedad decorativamente
+
+**Bug crítico**: el middleware `permitOwnerOr(['PLANTA','FRANQUICIA'], ...)` pasaba a cualquier rol listado **sin verificar propiedad**. La verificación de "owner" era código muerto — una FRANQUICIA podía editar/desactivar TODAS las sucursales del sistema, contradiciendo el CHANGELOG del 2026-05-24.
+
+**Fix**: rediseño de la firma para separar `globalRoles` (pasan sin verificar, ej PLANTA) de `ownerRoles` (verifican propiedad, ej FRANQUICIA). SUCURSAL recibe 403.
+
+#### 2. Timestamps unificados en Sucursal
+
+`fechaCreacion` manual eliminado. Ahora usa `timestamps: { createdAt: 'fechaCreacion', updatedAt: 'fechaActualizacion' }` — mismo patrón que `pedido.model.js`. El Pug sigue leyendo `s.fechaCreacion` sin cambios. Panel de trazabilidad enriquecido: ahora muestra fecha de creación y de última modificación junto a `createdBy`/`updatedBy`.
+
+#### 3. Listado de sucursales filtrado por propiedad
+
+`listar()` ahora recibe `req.user`: ADMIN/PLANTA ven todas, FRANQUICIA y SUCURSAL ven solo la suya (activa o desactivada, para permitir reactivar). Frontend oculta la card "Alta de sucursal" y los botones de acción para roles no-administradores.
+
+#### 4. Productos: CRUD solo PLANTA
+
+POST/PUT/DELETE de productos ahora `permit(['PLANTA'])` (antes permitía FRANQUICIA). Frontend oculta el form "Alta rápida" y los botones Editar/Eliminar para FRANQUICIA y SUCURSAL. El catálogo (GET) sigue visible para todos porque lo usan para armar pedidos.
+
+### Matriz de permisos resultante
+
+| Acción | ADMIN | PLANTA | FRANQUICIA | SUCURSAL |
+|--------|:-----:|:------:|:----------:|:--------:|
+| Crear sucursal | ✅ | ✅ | ❌ | ❌ |
+| Editar/desactivar cualquier sucursal | ✅ | ✅ | ❌ | ❌ |
+| Editar/desactivar la suya | ✅ | ✅ | ✅ | ❌ |
+| Ver todas las sucursales | ✅ | ✅ | ❌ solo la suya | ❌ solo la suya |
+| Crear/editar/eliminar productos | ✅ | ✅ | ❌ | ❌ |
+| Ver catálogo de productos | ✅ | ✅ | ✅ | ✅ |
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/shared/middlewares/permission.middleware.js` | Fix: `permitOwnerOr` rediseñado con `globalRoles`/`ownerRoles`. JSDoc actualizado. |
+| `src/modules/sucursales/sucursal.routes.js` | `POST` solo PLANTA. `PUT`/`DELETE`/`PATCH` con `permitOwnerOr(['PLANTA'],['FRANQUICIA'],...)`. |
+| `src/modules/sucursales/sucursal.controller.js` | `actualizar` pasa `req.user.rol` al service. `listar` pasa `req.user`. |
+| `src/modules/sucursales/sucursal.service.js` | `actualizar` filtra `tipo` para no-PLANTA/no-ADMIN. `listar(user)` filtra por propiedad. |
+| `src/modules/sucursales/sucursal.model.js` | `fechaCreacion` manual → `timestamps` mapeado a español. |
+| `src/modules/productos/producto.routes.js` | `POST`/`PUT`/`DELETE` con `permit(['PLANTA'])`. |
+| `src/public/auth.js` | Nuevas helpers `getUserRole()`, `canManageSucursales()`, `canManageProductos()`. |
+| `src/view/sucursales.pug` | Card alta con id, oculta por rol. `fila()` renderiza botones según rol. Trazabilidad muestra fechas. |
+| `src/view/productos.pug` | Card alta con id, oculta por rol. `filaProducto()` muestra — en Acciones para no-admins. |
+
+**Total: 9 archivos modificados**
+
+### Decisiones de diseño
+
+- **Franquiciado = 1 local**: `Usuario.sucursalId` sigue siendo `ObjectId` único. Si un dueño abre otro local, se crea otro usuario dedicado. Mantiene trazabilidad limpia y no rompe el modelo.
+- **Soft delete sin ocultar desactivadas**: el filtro del listado es por **propiedad**, no por estado. Las desactivadas siguen visibles para permitir reactivarlas.
+- **Defensa en profundidad sobre `tipo`**: el service elimina `tipo` del payload si el rol no es PLANTA/ADMIN, previniendo auto-ascenso de franquicia a sucursal.
+- **`canManageSucursales()` y `canManageProductos()` separados** aunque devuelvan el mismo conjunto (ADMIN/PLANTA), por semántica de dominio — si mañana cambia quién administra productos, se cambia un solo lugar.
+
+---
+
+## Trazabilidad de sucursales + restauración endpoint activar (2026-06-20)
+
+**Asistido por IA** (OpenCode + Engram Memory)
+
+### Resumen
+
+Feature de trazabilidad de sucursales: campos de auditoría (`createdBy`, `updatedBy`, `deactivatedBy`, `deactivatedAt`) en el modelo, nuevo endpoint `GET /api/sucursales/:id/trazabilidad` con populate de usuario y resumen de pedidos, y panel de trazabilidad en `sucursales.pug`. Además se restauró el endpoint `PATCH /api/sucursales/:id/activar` (con su botón condicional en el Pug) que se había perdido porque el commit `509f843` nunca se pusheó a `origin/pre-main` — solo existía en `pre-main` local. La versión restaurada mejora la original: limpia `deactivatedBy`/`deactivatedAt` al reactivar, setea `updatedBy`, y aplica `permitOwnerOr` para autorización por propiedad.
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/modules/sucursales/sucursal.model.js` | Feat: campos de trazabilidad `createdBy`, `updatedBy`, `deactivatedBy` (ref Usuario) + `deactivatedAt` (Date). |
+| `src/modules/sucursales/sucursal.service.js` | Feat: `crear()` setea `createdBy`; `actualizar()` setea `updatedBy`; `desactivar()` setea `deactivatedBy`/`deactivatedAt`. Feat: `obtenerTrazabilidad(id)` con populate de usuario y resumen de pedidos (total, activos, últimos 5). Feat: `activar(id, userId)` reactiva sucursal, limpia campos de desactivación y setea `updatedBy`. |
+| `src/modules/sucursales/sucursal.controller.js` | Feat: handler `trazabilidad(req, res, next)`. Feat: handler `activar(req, res, next)`. |
+| `src/modules/sucursales/sucursal.routes.js` | Feat: `GET /:id/trazabilidad`. Feat: `PATCH /:id/activar` con `permitOwnerOr(['PLANTA','FRANQUICIA'], ...)`. |
+| `src/view/sucursales.pug` | Feat: panel de trazabilidad con grid de auditoría + pedidos. Feat: botón "📋 Trazabilidad" por fila. Feat: botón condicional "Activar"/"Desactivar" según `s.activa`. Handler `data-on` para `PATCH /activar`. |
+| `src/public/styles.css` | Feat: estilos `.btn-trace`, `.trazabilidad-grid` (grid 2 columnas), `#trazabilidadCard`. |
+
+**Total: 6 archivos modificados**
+
+### Logros
+
+- Auditoría completa: cada sucursal registra quién la creó, modificó y desactivó, y cuándo.
+- Endpoint de trazabilidad con populate de usuario + agregación de pedidos en una sola query.
+- Restaurado el endpoint `PATCH /activar` que se había perdido (commit `509f843` nunca pusheado a `origin/pre-main`).
+- El botón de acción cambia dinámicamente entre "Activar" y "Desactivar" según el estado de la sucursal.
+- La versión restaurada de `activar` mejora la original: limpia `deactivatedBy`/`deactivatedAt` y aplica `permitOwnerOr`.
+
+### Notas
+
+- El commit `509f843` (2026-05-13) quedó solo en `pre-main` local sin pushear a `origin/pre-main`, por eso no estaba disponible al crear la rama `trazabilidad-sucursales` desde `origin/pre-main`. Como `origin/pre-main` y `origin/main` apuntaban al mismo commit (`822dc52`), la rama nació sin el endpoint activar.
+- Se decidió NO pushear `509f843` a `origin/pre-main` retroactivamente: el código ya está restaurado y mejorado en esta rama.
+
+---
+
 ## Módulo Usuarios — Admin (2026-06-19)
 
 **Asistido por IA**
