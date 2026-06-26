@@ -23,6 +23,19 @@ const itemPedidoSchema = new mongoose.Schema({
   },
 }, { _id: false }); // No se necesitan IDs para estos subdocumentos.
 
+const historialEstadoSchema = new mongoose.Schema({
+  estado: { type: String, required: true },
+  usuarioId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true,
+  },
+  fecha: {
+    type: Date,
+    default: Date.now,
+  },
+}, { _id: false });
+
 const pedidoSchema = new mongoose.Schema({
   sucursalId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -47,6 +60,19 @@ const pedidoSchema = new mongoose.Schema({
   observaciones: {
     type: String,
     default: '',
+  },
+  precioTotal: {
+    type: Number,
+    required: true,
+    min: [0, 'El precio total no puede ser negativo'],
+  },
+  creadoPor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true,
+  },
+  historialEstados: {
+    type: [historialEstadoSchema],
   },
 }, {
   // Mongoose manejará createdAt y updatedAt, que mapeamos a nuestros campos existentes.

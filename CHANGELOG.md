@@ -1,5 +1,30 @@
 # Changelog
 
+## Trazabilidad y Precio Total en Pedidos (2026-06-24)
+
+**Asistido por:** IA (Gemini Code Assist)
+
+**Resumen:**
+Se implementó una funcionalidad completa de trazabilidad para el módulo de pedidos, replicando el patrón ya existente en sucursales. Ahora, cada pedido registra un historial inmutable de sus cambios de estado, incluyendo qué usuario realizó el cambio y cuándo. Adicionalmente, se añadió el cálculo y visualización del precio total del pedido, un dato crucial que faltaba tanto en el backend como en la interfaz de usuario.
+
+**Logros:**
+*   **Auditoría Completa de Pedidos:** El modelo `Pedido` ahora almacena un `historialEstados` que funciona como un log de auditoría.
+*   **Cálculo de Precio Total:** El servicio de creación de pedidos calcula automáticamente el `precioTotal` basándose en los productos y cantidades, guardándolo en la base de datos.
+*   **Endpoint de Trazabilidad Dedicado:** Se creó la ruta `GET /api/pedidos/:id/trazabilidad` que devuelve el historial del pedido con los datos de los usuarios populados, listo para ser consumido por el frontend.
+*   **Integración Transparente en la UI:** La vista `pedidos.pug` fue actualizada para mostrar la nueva columna de precio y un botón de "Trazabilidad" que despliega un panel con el historial detallado, sin recargar la página.
+
+**Archivos Modificados:**
+
+| Archivo | Cambio |
+| :--- | :--- |
+| `src/modules/pedidos/pedido.model.js` | **Feat:** Añadidos campos `precioTotal`, `creadoPor` y `historialEstados` al schema. |
+| `src/modules/pedidos/pedido.service.js` | **Feat:** Lógica para calcular precio y registrar el historial en `crear()` y `cambiarEstado()`. Nuevo servicio `obtenerTrazabilidad()`. |
+| `src/modules/pedidos/pedido.controller.js` | **Feat:** Nuevos handlers para pasar el `userId` al servicio y para el endpoint de trazabilidad. |
+| `src/modules/pedidos/pedido.routes.js` | **Feat:** Añadida la nueva ruta `GET /:id/trazabilidad`. |
+| `src/view/pedidos.pug` | **Feat:** Añadida columna "Precio Total", botón de trazabilidad, panel de detalles y el JS correspondiente para la interacción. |
+
+---
+
 ## Seguridad + UX por rol en Sucursales y Productos (2026-06-20)
 
 **Asistido por IA** (OpenCode + Engram Memory)
