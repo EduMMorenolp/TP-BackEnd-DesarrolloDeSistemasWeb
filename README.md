@@ -386,7 +386,8 @@ Para probar la API, importar la colección `La Espiga de Oro - API Collection.po
 
 ## Despliegue
 
-El servidor inicia en `http://localhost:3000` por defecto.
+- **Demo en producción:** https://tp-backend-desarrollodesistemasweb-production.up.railway.app
+- **Desarrollo local:** `npm run dev` → `http://localhost:3000`
 
 ## Equipo de Desarrollo
 
